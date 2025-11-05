@@ -28,6 +28,9 @@ export class Product extends BaseEntity {
   @Column({ type: 'integer' })
   pointValue: number;
 
+  @Column({ type: 'boolean', default: false })
+  isApproved: boolean;
+
   @Column({
     type: 'enum',
     enum: ProductStatus,
@@ -35,8 +38,8 @@ export class Product extends BaseEntity {
   })
   status: ProductStatus;
 
-  @Column({ type: 'uuid' })
-  shopId: string;
+  @Column({ type: 'uuid', nullable: true })
+  shopId: string | null;
 
   @ManyToOne(() => Shop, (shop) => shop.products)
   @JoinColumn({ name: 'shopId' })

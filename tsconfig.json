@@ -23,5 +23,5 @@
     "noFallthroughCasesInSwitch": false
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "frontend", "test", "**/*spec.ts"]
+  "exclude": ["node_modules", "dist", "frontend", "test", "**/*spec.ts", "src/admin/**/*.jsx"]
 }

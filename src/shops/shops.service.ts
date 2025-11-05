@@ -21,6 +21,12 @@ export class ShopsService {
     });
   }
 
+  async findByName(name: string): Promise<Shop | null> {
+    return this.shopsRepository.findOne({
+      where: { name },
+    });
+  }
+
   async create(shopData: Partial<Shop>): Promise<Shop> {
     const shop = this.shopsRepository.create(shopData);
     return this.shopsRepository.save(shop);

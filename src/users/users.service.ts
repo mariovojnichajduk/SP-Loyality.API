@@ -105,4 +105,16 @@ export class UsersService {
     }
     return user.favoriteShops || [];
   }
+
+  async addPoints(userId: string, points: number): Promise<User> {
+    const user = await this.findById(userId);
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    user.points = (user.points || 0) + points;
+    await this.usersRepository.save(user);
+
+    return user;
+  }
 }

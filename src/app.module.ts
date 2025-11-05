@@ -9,13 +9,12 @@ import { AuthModule } from './auth/auth.module';
 import { ShopsModule } from './shops/shops.module';
 import { ProductsModule } from './products/products.module';
 import { TransactionsModule } from './transactions/transactions.module';
-import { ApprovalRequestsModule } from './approval-requests/approval-requests.module';
 import { PointsModule } from './points/points.module';
 import { User, UserRole } from './users/user.entity';
 import { Shop } from './shops/shop.entity';
-import { Product } from './products/product.entity';
+import { Product, ProductStatus } from './products/product.entity';
 import { Transaction } from './transactions/transaction.entity';
-import { ApprovalRequest, ApprovalStatus } from './approval-requests/approval-request.entity';
+import { ProductApprovalRequest } from './products/product-approval-request.entity';
 import { StatisticsModule } from './statistics/statistics.module';
 import { ReceiptsModule } from './receipts/receipts.module';
 
@@ -79,6 +78,10 @@ const authenticate = async (email: string, password: string) => {
             'Dashboard',
             path.join(__dirname, './admin/dashboard'),
           );
+          const ApproveProduct = componentLoader.add(
+            'ApproveProduct',
+            path.join(__dirname, './admin/approve-product'),
+          );
 
           return {
             adminJsOptions: {
@@ -94,11 +97,13 @@ const authenticate = async (email: string, password: string) => {
                       totalShops,
                       totalTransactions,
                       totalApprovalRequests,
+                      unapprovedProducts,
                     ] = await Promise.all([
                       User.count(),
                       Shop.count(),
                       Transaction.count(),
-                      ApprovalRequest.count(),
+                      ProductApprovalRequest.count(),
+                      Product.count({ where: { isApproved: false } }),
                     ]);
 
                     const totalPointsResult = await Transaction.createQueryBuilder(
@@ -122,36 +127,26 @@ const authenticate = async (email: string, password: string) => {
                       .limit(5)
                       .getRawMany();
 
-                    // Get approval request statistics
+                    // Get product approval statistics
                     const last7Days = new Date();
                     last7Days.setDate(last7Days.getDate() - 7);
                     const last30Days = new Date();
                     last30Days.setDate(last30Days.getDate() - 30);
 
                     const [
-                      totalPending,
                       totalApproved,
-                      totalRejected,
                       last7DaysCount,
                       last30DaysCount,
                       mostRequestedProducts,
                     ] = await Promise.all([
-                      ApprovalRequest.count({
-                        where: { status: ApprovalStatus.PENDING },
-                      }),
-                      ApprovalRequest.count({
-                        where: { status: ApprovalStatus.APPROVED },
-                      }),
-                      ApprovalRequest.count({
-                        where: { status: ApprovalStatus.REJECTED },
-                      }),
-                      ApprovalRequest.createQueryBuilder('request')
+                      Product.count({ where: { isApproved: true } }),
+                      ProductApprovalRequest.createQueryBuilder('request')
                         .where('request.createdAt >= :date', { date: last7Days })
                         .getCount(),
-                      ApprovalRequest.createQueryBuilder('request')
+                      ProductApprovalRequest.createQueryBuilder('request')
                         .where('request.createdAt >= :date', { date: last30Days })
                         .getCount(),
-                      ApprovalRequest.createQueryBuilder('request')
+                      ProductApprovalRequest.createQueryBuilder('request')
                         .leftJoin('request.product', 'product')
                         .select('product.id', 'productId')
                         .addSelect('product.name', 'productName')
@@ -169,14 +164,14 @@ const authenticate = async (email: string, password: string) => {
                         totalShops,
                         totalTransactions,
                         totalApprovalRequests,
+                        unapprovedProducts,
                         totalPointsUsed: totalPointsResult?.total || 0,
                       },
                       topShops,
                       approvalStats: {
                         summary: {
-                          totalPending,
+                          unapprovedProducts,
                           totalApproved,
-                          totalRejected,
                           last7Days: last7DaysCount,
                           last30Days: last30DaysCount,
                         },
@@ -193,14 +188,14 @@ const authenticate = async (email: string, password: string) => {
                         totalShops: 0,
                         totalTransactions: 0,
                         totalApprovalRequests: 0,
+                        unapprovedProducts: 0,
                         totalPointsUsed: 0,
                       },
                       topShops: [],
                       approvalStats: {
                         summary: {
-                          totalPending: 0,
+                          unapprovedProducts: 0,
                           totalApproved: 0,
-                          totalRejected: 0,
                           last7Days: 0,
                           last30Days: 0,
                         },
@@ -232,27 +227,17 @@ const authenticate = async (email: string, password: string) => {
                 {
                   resource: Product,
                   options: {
-                    navigation: { name: 'Shop Management', icon: 'Store' },
-                  },
-                },
-                {
-                  resource: Transaction,
-                  options: {
-                    navigation: { name: 'Transactions', icon: 'Receipt' },
-                  },
-                },
-                {
-                  resource: ApprovalRequest,
-                  options: {
-                    navigation: { name: 'Approval Requests', icon: 'CheckSquare' },
-                    listProperties: ['id', 'userId', 'productId', 'status', 'createdAt'],
-                    filterProperties: [],
+                    navigation: { name: 'Product Approval', icon: 'CheckSquare' },
+                    listProperties: ['name', 'shopId', 'isApproved', 'pointValue', 'createdAt'],
                     properties: {
-                      userId: {
+                      shopId: {
+                        isVisible: { list: true, show: true, edit: false, filter: false },
+                      },
+                      isApproved: {
                         isVisible: { list: true, show: true, edit: false, filter: true },
                       },
-                      productId: {
-                        isVisible: { list: true, show: true, edit: false, filter: true },
+                      pointValue: {
+                        isVisible: { list: true, show: true, edit: false, filter: false },
                       },
                     },
                     sort: {
@@ -260,19 +245,22 @@ const authenticate = async (email: string, password: string) => {
                       direction: 'desc',
                     },
                     actions: {
-                      edit: { isVisible: false },
+                      edit: {
+                        isVisible: (context) => {
+                          return context.record.params.isApproved === false;
+                        },
+                      },
                       delete: { isVisible: false },
                       bulkDelete: { isVisible: false },
                       new: { isVisible: false },
-                      search: { isVisible: false },
                       list: {
                         before: async (request) => {
-                          if (!request.query?.filters?.status) {
+                          if (!request.query?.filters?.isApproved) {
                             request.query = {
                               ...request.query,
                               filters: {
                                 ...request.query?.filters,
-                                status: ApprovalStatus.PENDING,
+                                isApproved: 'false',
                               },
                             };
                           }
@@ -281,108 +269,126 @@ const authenticate = async (email: string, password: string) => {
                       },
                       approve: {
                         actionType: 'record',
-                        component: false,
+                        component: ApproveProduct,
                         isVisible: (context) => {
-                          return context.record.params.status === ApprovalStatus.PENDING;
+                          return context.record.params.isApproved === false;
                         },
                         handler: async (request, response, context) => {
                           const { record, currentAdmin } = context;
-                          const approvalRequest = await ApprovalRequest.findOne({
-                            where: { id: record.id() },
-                            relations: ['user', 'product'],
-                          });
+                          const productId = record.id();
 
-                          if (!approvalRequest) {
+                          // Get data from request payload
+                          const pointValue = parseInt(request.payload?.pointValue);
+                          const shopId = request.payload?.shopId || null;
+
+                          if (!pointValue || pointValue <= 0) {
                             return {
                               record: record.toJSON(currentAdmin),
                               notice: {
-                                message: 'Approval request not found',
+                                message: 'Please provide a valid point value',
                                 type: 'error',
                               },
                             };
                           }
 
-                          if (approvalRequest.status !== ApprovalStatus.PENDING) {
+                          try {
+                            const product = await Product.findOne({ where: { id: productId } });
+                            if (!product) {
+                              return {
+                                record: record.toJSON(currentAdmin),
+                                notice: {
+                                  message: 'Product not found',
+                                  type: 'error',
+                                },
+                              };
+                            }
+
+                            // Update product with point value and shop
+                            product.pointValue = pointValue;
+                            product.isApproved = true;
+                            product.status = ProductStatus.AVAILABLE;
+                            if (shopId) {
+                              product.shopId = shopId;
+                            }
+                            await product.save();
+
+                            // Find and reward all users who requested this product
+                            const approvalRequests = await ProductApprovalRequest.find({
+                              where: { productId, isRewarded: false },
+                              relations: ['user'],
+                            });
+
+                            for (const req of approvalRequests) {
+                              if (req.user) {
+                                req.user.points = (req.user.points || 0) + product.pointValue;
+                                await req.user.save();
+                                req.isRewarded = true;
+                                await req.save();
+                              }
+                            }
+
                             return {
                               record: record.toJSON(currentAdmin),
                               notice: {
-                                message: 'Only pending requests can be approved',
+                                message: `Product approved! ${product.pointValue} points set. ${approvalRequests.length} user(s) rewarded.`,
+                                type: 'success',
+                              },
+                              redirectUrl: '/admin/resources/Product',
+                            };
+                          } catch (error) {
+                            return {
+                              record: record.toJSON(currentAdmin),
+                              notice: {
+                                message: `Error: ${error.message}`,
                                 type: 'error',
                               },
                             };
                           }
-
-                          // Update status to approved
-                          approvalRequest.status = ApprovalStatus.APPROVED;
-                          await approvalRequest.save();
-
-                          // Award points to user
-                          if (approvalRequest.user && approvalRequest.product) {
-                            approvalRequest.user.points += approvalRequest.product.pointValue;
-                            await approvalRequest.user.save();
-                          }
-
-                          return {
-                            record: record.toJSON(currentAdmin),
-                            notice: {
-                              message: `Request approved! ${approvalRequest.product.pointValue} points awarded to ${approvalRequest.user.name}`,
-                              type: 'success',
-                            },
-                            redirectUrl: '/admin/resources/ApprovalRequest',
-                          };
                         },
-                        guard: 'Are you sure you want to approve this request?',
                         icon: 'CheckCircle',
                       },
                       reject: {
                         actionType: 'record',
                         component: false,
                         isVisible: (context) => {
-                          return context.record.params.status === ApprovalStatus.PENDING;
+                          return context.record.params.isApproved === false;
                         },
                         handler: async (request, response, context) => {
                           const { record, currentAdmin } = context;
-                          const approvalRequest = await ApprovalRequest.findOne({
-                            where: { id: record.id() },
-                          });
+                          const productId = record.id();
 
-                          if (!approvalRequest) {
+                          try {
+                            await Product.delete(productId);
+                            await ProductApprovalRequest.delete({ productId });
+
                             return {
                               record: record.toJSON(currentAdmin),
                               notice: {
-                                message: 'Approval request not found',
+                                message: 'Product rejected and removed',
+                                type: 'success',
+                              },
+                              redirectUrl: '/admin/resources/Product',
+                            };
+                          } catch (error) {
+                            return {
+                              record: record.toJSON(currentAdmin),
+                              notice: {
+                                message: `Error: ${error.message}`,
                                 type: 'error',
                               },
                             };
                           }
-
-                          if (approvalRequest.status !== ApprovalStatus.PENDING) {
-                            return {
-                              record: record.toJSON(currentAdmin),
-                              notice: {
-                                message: 'Only pending requests can be rejected',
-                                type: 'error',
-                              },
-                            };
-                          }
-
-                          // Update status to rejected
-                          approvalRequest.status = ApprovalStatus.REJECTED;
-                          await approvalRequest.save();
-
-                          return {
-                            record: record.toJSON(currentAdmin),
-                            notice: {
-                              message: 'Request rejected',
-                              type: 'success',
-                            },
-                            redirectUrl: '/admin/resources/ApprovalRequest',
-                          };
                         },
-                        guard: 'Are you sure you want to reject this request?',
+                        guard: 'Are you sure you want to reject and delete this product?',
                         icon: 'XCircle',
                       },
                     },
+                  },
+                },
+                {
+                  resource: Transaction,
+                  options: {
+                    navigation: { name: 'Transactions', icon: 'Receipt' },
                   },
                 },
               ],
@@ -411,7 +417,6 @@ const authenticate = async (email: string, password: string) => {
     ShopsModule,
     ProductsModule,
     TransactionsModule,
-    ApprovalRequestsModule,
     PointsModule,
     StatisticsModule,
     ReceiptsModule,

@@ -7,12 +7,16 @@ import {
   ProcessReceiptResponseDto,
 } from './dto/receipt-product.dto';
 import { ProductsService } from '../products/products.service';
+import { ShopsService } from '../shops/shops.service';
 
 @Injectable()
 export class ReceiptsService {
   private readonly logger = new Logger(ReceiptsService.name);
 
-  constructor(private readonly productsService: ProductsService) {}
+  constructor(
+    private readonly productsService: ProductsService,
+    private readonly shopsService: ShopsService,
+  ) {}
 
   async processReceipt(
     processReceiptDto: ProcessReceiptDto,
@@ -111,9 +115,9 @@ export class ReceiptsService {
       // - product name: naziv, name, description
 
       let items: any[] = [];
-      let totalAmount: number | undefined;
       let receiptDate: string | undefined;
       let storeName: string | undefined;
+      let rawStoreName: string | undefined;
 
       // Try different possible structures
       if (data.items) {
@@ -126,23 +130,18 @@ export class ReceiptsService {
         items = data;
       }
 
-      // Extract total amount
-      if (data.totalAmount !== undefined) {
-        totalAmount = parseFloat(data.totalAmount);
-      } else if (data.ukupanIznos !== undefined) {
-        totalAmount = parseFloat(data.ukupanIznos);
-      } else if (data.total !== undefined) {
-        totalAmount = parseFloat(data.total);
-      }
-
       // Extract receipt date
       if (data.receiptDate || data.datum || data.date) {
         receiptDate = data.receiptDate || data.datum || data.date;
       }
 
-      // Extract store name
-      if (data.storeName || data.prodavnica || data.seller) {
-        storeName = data.storeName || data.prodavnica || data.seller;
+      // Extract store name and clean it
+      // Format is often: "1235237-287 - Maxi" or similar
+      if (data.storeName || data.prodavnica || data.seller || data.shopName) {
+        rawStoreName = data.storeName || data.prodavnica || data.seller || data.shopName;
+        if (rawStoreName) {
+          storeName = this.extractCleanStoreName(rawStoreName);
+        }
       }
 
       // Parse items
@@ -158,11 +157,21 @@ export class ReceiptsService {
       // Check if products exist in database
       await this.checkProductsExistence(products);
 
+      // Look up shop by name
+      let shopId: string | undefined;
+      if (storeName) {
+        const shop = await this.shopsService.findByName(storeName);
+        if (shop) {
+          shopId = shop.id;
+        }
+      }
+
       return {
         products,
-        totalAmount,
         receiptDate,
         storeName,
+        rawStoreName,
+        shopId,
       };
     } catch (error) {
       this.logger.error('Error parsing receipt data:', error);
@@ -213,13 +222,24 @@ export class ReceiptsService {
     return parseFloat(qty) || 1;
   }
 
+  private extractCleanStoreName(rawStoreName: string): string {
+    // Format is often: "1235237-287 - Maxi"
+    // We want to extract just "Maxi"
+    const match = rawStoreName.match(/\d+-\d+\s*-\s*(.+)/);
+    if (match) {
+      return match[1].trim();
+    }
+    // If no match, return the raw name cleaned up
+    return rawStoreName.trim();
+  }
+
   private async parseReceiptFromHtml(html: string): Promise<ProcessReceiptResponseDto> {
     try {
       const $ = cheerio.load(html);
       const products: ReceiptProductDto[] = [];
-      let totalAmount: number | undefined;
       let receiptDate: string | undefined;
       let storeName: string | undefined;
+      let rawStoreName: string | undefined;
 
       // Serbian fiscal receipts are displayed as plain text in a preformatted section
       // Extract the text content and parse it line by line
@@ -314,12 +334,11 @@ export class ReceiptsService {
           }
         }
 
-        // Extract total amount
-        if (line.match(/укупан износ/i)) {
-          const amountMatch = line.match(/(\d+[.,]\d+)/);
-          if (amountMatch) {
-            totalAmount = parseFloat(amountMatch[1].replace(',', '.'));
-          }
+        // Extract store name (format: "1235237-287 - Maxi" or similar)
+        // Usually found near the top of the receipt
+        if (!rawStoreName && line.match(/\d+-\d+\s*-\s*[A-Za-zА-Яа-я]/)) {
+          rawStoreName = line.trim();
+          storeName = this.extractCleanStoreName(rawStoreName);
         }
 
         // Extract date
@@ -342,11 +361,21 @@ export class ReceiptsService {
       // Check if products exist in database
       await this.checkProductsExistence(products);
 
+      // Look up shop by name
+      let shopId: string | undefined;
+      if (storeName) {
+        const shop = await this.shopsService.findByName(storeName);
+        if (shop) {
+          shopId = shop.id;
+        }
+      }
+
       return {
         products,
-        totalAmount,
         receiptDate,
         storeName,
+        rawStoreName,
+        shopId,
       };
     } catch (error) {
       this.logger.error('Error parsing HTML receipt:', error);

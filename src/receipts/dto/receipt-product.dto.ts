@@ -36,13 +36,6 @@ export class ProcessReceiptResponseDto {
   products: ReceiptProductDto[];
 
   @ApiProperty({
-    description: 'Receipt total amount',
-    example: 1250.50,
-    required: false,
-  })
-  totalAmount?: number;
-
-  @ApiProperty({
     description: 'Receipt date and time',
     example: '2025-11-05T12:30:00',
     required: false,
@@ -50,9 +43,23 @@ export class ProcessReceiptResponseDto {
   receiptDate?: string;
 
   @ApiProperty({
-    description: 'Store name',
-    example: 'Maxi - Beograd',
+    description: 'Store name (cleaned)',
+    example: 'Maxi',
     required: false,
   })
   storeName?: string;
+
+  @ApiProperty({
+    description: 'Raw store name from receipt (with ID)',
+    example: '1235237-287 - Maxi',
+    required: false,
+  })
+  rawStoreName?: string;
+
+  @ApiProperty({
+    description: 'Shop ID from database (null if shop not found by name)',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+    required: false,
+  })
+  shopId?: string;
 }
