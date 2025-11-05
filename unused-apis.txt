@@ -1,0 +1,202 @@
+# Unused API Endpoints Analysis
+Generated: 2025-11-06
+
+## Summary
+Total Backend Endpoints: 36
+Used in Frontend: 14
+Unused Endpoints: 22
+
+================================================================================
+UNUSED API ENDPOINTS
+================================================================================
+
+1. USER ENDPOINTS (Unused)
+---------------------------
+- DELETE /api/user/me
+  Description: Deactivate user account
+  Auth: Yes (JWT)
+  Admin: No
+
+- GET /api/user/me/favorite-shops
+  Description: Get user favorite shops
+  Auth: Yes (JWT)
+  Admin: No
+
+- POST /api/user/me/favorite-shops
+  Description: Add shop to favorites
+  Auth: Yes (JWT)
+  Admin: No
+
+- DELETE /api/user/me/favorite-shops/:shopId
+  Description: Remove shop from favorites
+  Auth: Yes (JWT)
+  Admin: No
+
+--------------------------------------------------------------------------------
+
+2. APPROVAL REQUESTS ENDPOINTS (Unused - entire controller)
+------------------------------------------------------------
+- POST /approval-requests
+  Description: Create approval request
+  Auth: Yes (JWT)
+  Admin: No
+
+- GET /approval-requests/my-requests
+  Description: Get user's approval requests
+  Auth: Yes (JWT)
+  Admin: No
+
+- GET /approval-requests
+  Description: Get all approval requests (admin)
+  Auth: Yes (JWT)
+  Admin: Yes
+
+- GET /approval-requests/pending
+  Description: Get pending requests (admin)
+  Auth: Yes (JWT)
+  Admin: Yes
+
+- PATCH /approval-requests/:id/status
+  Description: Approve/reject request (admin)
+  Auth: Yes (JWT)
+  Admin: Yes
+
+- GET /approval-requests/:id
+  Description: Get specific approval request by ID
+  Auth: Yes (JWT)
+  Admin: No (users can only see their own)
+
+--------------------------------------------------------------------------------
+
+3. PRODUCTS ENDPOINTS (Unused - admin only)
+--------------------------------------------
+- GET /api/products/unapproved
+  Description: Get all unapproved products (admin)
+  Auth: Yes (JWT)
+  Admin: Yes
+
+- POST /api/products/:id/approve
+  Description: Approve product and reward users (admin)
+  Auth: Yes (JWT)
+  Admin: Yes
+
+--------------------------------------------------------------------------------
+
+4. STATISTICS ENDPOINTS (Unused - entire controller, all admin-only)
+---------------------------------------------------------------------
+- GET /statistics/overview
+  Description: Overall statistics
+  Auth: Yes (JWT)
+  Admin: Yes
+
+- GET /statistics/most-scanned-products
+  Description: Most scanned products (optionally by shop)
+  Auth: Yes (JWT)
+  Admin: Yes
+
+- GET /statistics/top-performing-shops
+  Description: Top performing shops
+  Auth: Yes (JWT)
+  Admin: Yes
+
+- GET /statistics/user-activity-trends
+  Description: User activity trends
+  Auth: Yes (JWT)
+  Admin: Yes
+
+- GET /statistics/approval-request-frequency
+  Description: Approval request frequency statistics
+  Auth: Yes (JWT)
+  Admin: Yes
+
+- GET /statistics/shop-report/:shopId
+  Description: Detailed shop report for specific shop
+  Auth: Yes (JWT)
+  Admin: Yes
+
+--------------------------------------------------------------------------------
+
+5. HEALTH CHECK (Unused)
+-------------------------
+- GET /health
+  Description: Health check endpoint
+  Auth: No
+  Admin: No
+
+================================================================================
+USED API ENDPOINTS (For Reference)
+================================================================================
+
+AUTHENTICATION ENDPOINTS (/auth/)
+----------------------------------
+1. POST /auth/login - User login
+2. POST /auth/register - User registration
+3. POST /auth/verify-email - Verify email with 6-digit code
+4. POST /auth/resend-verification - Resend verification code
+5. POST /auth/forgot-password - Request password reset code
+6. POST /auth/reset-password - Reset password with code
+
+USER ENDPOINTS (/api/user/)
+----------------------------
+7. GET /api/user/me - Get user profile information
+8. PATCH /api/user/me/name - Update user name
+9. PATCH /api/user/me/password - Change password
+
+POINTS ENDPOINTS (/api/points/)
+--------------------------------
+10. GET /api/points - Get current user points balance
+
+RECEIPT ENDPOINTS (/receipts/)
+-------------------------------
+11. POST /receipts/process - Process receipt from URL/QR code
+12. POST /receipts/collect-points - Collect points for processed receipt
+
+PRODUCT ENDPOINTS (/api/products/)
+-----------------------------------
+13. POST /api/products/request-approval - Request approval for a product
+14. GET /api/products/approval-status - Get approval status for products
+
+================================================================================
+KEY OBSERVATIONS
+================================================================================
+
+1. NO ADMIN PANEL
+   All admin-only endpoints (statistics, product approval management) are
+   unused, suggesting the admin panel hasn't been implemented in the frontend.
+
+2. FAVORITES FEATURE MISSING
+   The favorite shops functionality exists in the backend but isn't
+   implemented in the UI.
+
+3. DUPLICATE APPROVAL SYSTEM
+   There appear to be two different approval systems:
+   - /approval-requests/* (unused, seems more complete)
+   - /api/products/request-approval (used in frontend)
+
+   Consider consolidating these into one system.
+
+4. NO ACCOUNT DELETION
+   User account deactivation endpoint exists but no UI for it.
+
+5. NO MONITORING
+   Health check endpoint is not being used by any monitoring system.
+
+================================================================================
+RECOMMENDATIONS
+================================================================================
+
+Option 1: Remove Unused Endpoints
+   - Clean up the codebase by removing unused controllers and endpoints
+   - Reduces maintenance burden and attack surface
+   - Keep only what's actively used
+
+Option 2: Implement Missing Features
+   - Build admin panel for statistics and product management
+   - Add favorites functionality to the user interface
+   - Implement account deletion feature
+   - Add health monitoring
+
+Option 3: Document for Future Implementation
+   - Keep endpoints but mark as "planned features"
+   - Create issues/tickets for future implementation
+   - Helps with project roadmap planning
