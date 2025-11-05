@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import * as bcrypt from 'bcrypt';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UsersModule } from './users/users.module';
@@ -10,23 +11,32 @@ import { ProductsModule } from './products/products.module';
 import { TransactionsModule } from './transactions/transactions.module';
 import { ApprovalRequestsModule } from './approval-requests/approval-requests.module';
 import { PointsModule } from './points/points.module';
-import { User } from './users/user.entity';
+import { User, UserRole } from './users/user.entity';
 import { Shop } from './shops/shop.entity';
 import { Product } from './products/product.entity';
 import { Transaction } from './transactions/transaction.entity';
 import { ApprovalRequest } from './approval-requests/approval-request.entity';
 
-// Admin authentication (change these credentials!)
-const DEFAULT_ADMIN = {
-  email: 'admin@test.com',
-  password: 'admin123',
-};
-
+// Admin authentication using database users
 const authenticate = async (email: string, password: string) => {
-  if (email === DEFAULT_ADMIN.email && password === DEFAULT_ADMIN.password) {
-    return Promise.resolve(DEFAULT_ADMIN);
+  try {
+    const user = await User.findOne({ where: { email } });
+
+    if (!user || user.role !== UserRole.ADMIN) {
+      return null;
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+
+    if (isPasswordValid) {
+      return { email: user.email, name: user.name };
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Admin authentication error:', error);
+    return null;
   }
-  return null;
 };
 
 @Module({

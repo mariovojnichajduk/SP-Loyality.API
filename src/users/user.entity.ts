@@ -13,6 +13,11 @@ import { Transaction } from '../transactions/transaction.entity';
 import { ApprovalRequest } from '../approval-requests/approval-request.entity';
 import { Shop } from '../shops/shop.entity';
 
+export enum UserRole {
+  USER = 'user',
+  ADMIN = 'admin',
+}
+
 @Entity('users')
 export class User extends BaseEntity {
   @PrimaryGeneratedColumn('uuid')
@@ -26,6 +31,13 @@ export class User extends BaseEntity {
 
   @Column()
   password: string;
+
+  @Column({
+    type: 'enum',
+    enum: UserRole,
+    default: UserRole.USER,
+  })
+  role: UserRole;
 
   @ManyToMany(() => Shop)
   @JoinTable({
