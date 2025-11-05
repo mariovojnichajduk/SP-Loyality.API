@@ -4,7 +4,13 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  OneToMany,
+  ManyToMany,
+  JoinTable,
 } from 'typeorm';
+import { Transaction } from '../transactions/transaction.entity';
+import { ApprovalRequest } from '../approval-requests/approval-request.entity';
+import { Shop } from '../shops/shop.entity';
 
 @Entity('users')
 export class User {
@@ -20,8 +26,13 @@ export class User {
   @Column()
   password: string;
 
-  @Column({ type: 'simple-array', nullable: true })
-  favoriteShops: string[];
+  @ManyToMany(() => Shop)
+  @JoinTable({
+    name: 'user_favorite_shops',
+    joinColumn: { name: 'userId', referencedColumnName: 'id' },
+    inverseJoinColumn: { name: 'shopId', referencedColumnName: 'id' },
+  })
+  favoriteShops: Shop[];
 
   @Column({ type: 'integer', default: 0 })
   points: number;
@@ -34,6 +45,12 @@ export class User {
 
   @Column({ nullable: true })
   verificationCodeExpiry: Date;
+
+  @OneToMany(() => Transaction, (transaction) => transaction.user)
+  transactions: Transaction[];
+
+  @OneToMany(() => ApprovalRequest, (approvalRequest) => approvalRequest.user)
+  approvalRequests: ApprovalRequest[];
 
   @CreateDateColumn()
   createdAt: Date;

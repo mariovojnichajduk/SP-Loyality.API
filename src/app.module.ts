@@ -5,6 +5,10 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
+import { ShopsModule } from './shops/shops.module';
+import { ProductsModule } from './products/products.module';
+import { TransactionsModule } from './transactions/transactions.module';
+import { ApprovalRequestsModule } from './approval-requests/approval-requests.module';
 
 @Module({
   imports: [
@@ -28,6 +32,10 @@ import { AuthModule } from './auth/auth.module';
     }),
     UsersModule,
     AuthModule,
+    ShopsModule,
+    ProductsModule,
+    TransactionsModule,
+    ApprovalRequestsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
