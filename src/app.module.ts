@@ -16,6 +16,7 @@ import { Shop } from './shops/shop.entity';
 import { Product } from './products/product.entity';
 import { Transaction } from './transactions/transaction.entity';
 import { ApprovalRequest, ApprovalStatus } from './approval-requests/approval-request.entity';
+import { StatisticsModule } from './statistics/statistics.module';
 
 // Admin authentication using database users
 const authenticate = async (email: string, password: string) => {
@@ -64,15 +65,151 @@ const authenticate = async (email: string, password: string) => {
         useFactory: async () => {
           const AdminJS = (await import('adminjs')).default;
           const AdminJSTypeorm = await import('@adminjs/typeorm');
+          const { ComponentLoader } = await import('adminjs');
 
           AdminJS.registerAdapter({
             Resource: AdminJSTypeorm.Resource,
             Database: AdminJSTypeorm.Database,
           });
 
+          const componentLoader = new ComponentLoader();
+          const path = await import('path');
+          const Dashboard = componentLoader.add(
+            'Dashboard',
+            path.join(__dirname, './admin/dashboard'),
+          );
+
           return {
             adminJsOptions: {
               rootPath: '/admin',
+              dashboard: {
+                component: Dashboard,
+                handler: async (request, response, context) => {
+                  console.log('Dashboard handler called');
+                  try {
+                    // Fetch all statistics using entity repositories
+                    const [
+                      totalUsers,
+                      totalShops,
+                      totalTransactions,
+                      totalApprovalRequests,
+                    ] = await Promise.all([
+                      User.count(),
+                      Shop.count(),
+                      Transaction.count(),
+                      ApprovalRequest.count(),
+                    ]);
+
+                    const totalPointsResult = await Transaction.createQueryBuilder(
+                      'transaction',
+                    )
+                      .select('SUM(transaction.points)', 'total')
+                      .getRawOne();
+
+                    // Get top performing shops
+                    const topShops = await Transaction.createQueryBuilder('transaction')
+                      .leftJoin('transaction.shop', 'shop')
+                      .select('shop.id', 'shopId')
+                      .addSelect('shop.name', 'shopName')
+                      .addSelect('shop.location', 'location')
+                      .addSelect('COUNT(transaction.id)', 'totalTransactions')
+                      .addSelect('SUM(transaction.points)', 'totalPointsUsed')
+                      .groupBy('shop.id')
+                      .addGroupBy('shop.name')
+                      .addGroupBy('shop.location')
+                      .orderBy('COUNT(transaction.id)', 'DESC')
+                      .limit(5)
+                      .getRawMany();
+
+                    // Get approval request statistics
+                    const last7Days = new Date();
+                    last7Days.setDate(last7Days.getDate() - 7);
+                    const last30Days = new Date();
+                    last30Days.setDate(last30Days.getDate() - 30);
+
+                    const [
+                      totalPending,
+                      totalApproved,
+                      totalRejected,
+                      last7DaysCount,
+                      last30DaysCount,
+                      mostRequestedProducts,
+                    ] = await Promise.all([
+                      ApprovalRequest.count({
+                        where: { status: ApprovalStatus.PENDING },
+                      }),
+                      ApprovalRequest.count({
+                        where: { status: ApprovalStatus.APPROVED },
+                      }),
+                      ApprovalRequest.count({
+                        where: { status: ApprovalStatus.REJECTED },
+                      }),
+                      ApprovalRequest.createQueryBuilder('request')
+                        .where('request.createdAt >= :date', { date: last7Days })
+                        .getCount(),
+                      ApprovalRequest.createQueryBuilder('request')
+                        .where('request.createdAt >= :date', { date: last30Days })
+                        .getCount(),
+                      ApprovalRequest.createQueryBuilder('request')
+                        .leftJoin('request.product', 'product')
+                        .select('product.id', 'productId')
+                        .addSelect('product.name', 'productName')
+                        .addSelect('COUNT(request.id)', 'requestCount')
+                        .groupBy('product.id')
+                        .addGroupBy('product.name')
+                        .orderBy('COUNT(request.id)', 'DESC')
+                        .limit(10)
+                        .getRawMany(),
+                    ]);
+
+                    const result = {
+                      overview: {
+                        totalUsers,
+                        totalShops,
+                        totalTransactions,
+                        totalApprovalRequests,
+                        totalPointsUsed: totalPointsResult?.total || 0,
+                      },
+                      topShops,
+                      approvalStats: {
+                        summary: {
+                          totalPending,
+                          totalApproved,
+                          totalRejected,
+                          last7Days: last7DaysCount,
+                          last30Days: last30DaysCount,
+                        },
+                        mostRequestedProducts,
+                      },
+                    };
+                    console.log('Dashboard handler returning data:', result);
+                    return result;
+                  } catch (error) {
+                    console.error('Dashboard handler error:', error);
+                    return {
+                      overview: {
+                        totalUsers: 0,
+                        totalShops: 0,
+                        totalTransactions: 0,
+                        totalApprovalRequests: 0,
+                        totalPointsUsed: 0,
+                      },
+                      topShops: [],
+                      approvalStats: {
+                        summary: {
+                          totalPending: 0,
+                          totalApproved: 0,
+                          totalRejected: 0,
+                          last7Days: 0,
+                          last30Days: 0,
+                        },
+                        mostRequestedProducts: [],
+                      },
+                    };
+                  }
+                },
+              },
+              componentLoader,
               resources: [
                 {
                   resource: User,
@@ -107,8 +244,16 @@ const authenticate = async (email: string, password: string) => {
                   resource: ApprovalRequest,
                   options: {
                     navigation: { name: 'Approval Requests', icon: 'CheckSquare' },
-                    listProperties: ['id', 'user', 'product', 'status', 'createdAt'],
+                    listProperties: ['id', 'userId', 'productId', 'status', 'createdAt'],
                     filterProperties: [],
+                    properties: {
+                      userId: {
+                        isVisible: { list: true, show: true, edit: false, filter: true },
+                      },
+                      productId: {
+                        isVisible: { list: true, show: true, edit: false, filter: true },
+                      },
+                    },
                     sort: {
                       sortBy: 'createdAt',
                       direction: 'desc',
@@ -267,6 +412,7 @@ const authenticate = async (email: string, password: string) => {
     TransactionsModule,
     ApprovalRequestsModule,
     PointsModule,
+    StatisticsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
