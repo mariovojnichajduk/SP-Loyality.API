@@ -6,10 +6,13 @@ import {
   ReceiptProductDto,
   ProcessReceiptResponseDto,
 } from './dto/receipt-product.dto';
+import { ProductsService } from '../products/products.service';
 
 @Injectable()
 export class ReceiptsService {
   private readonly logger = new Logger(ReceiptsService.name);
+
+  constructor(private readonly productsService: ProductsService) {}
 
   async processReceipt(
     processReceiptDto: ProcessReceiptDto,
@@ -97,7 +100,7 @@ export class ReceiptsService {
     }
   }
 
-  private parseReceiptData(data: any): ProcessReceiptResponseDto {
+  private async parseReceiptData(data: any): Promise<ProcessReceiptResponseDto> {
     try {
       const products: ReceiptProductDto[] = [];
 
@@ -149,20 +152,11 @@ export class ReceiptsService {
           quantity: this.extractQuantity(item),
         };
 
-        // Extract optional fields
-        const unitPrice = this.extractUnitPrice(item);
-        const totalPrice = this.extractTotalPrice(item);
-
-        if (unitPrice !== undefined) {
-          product.unitPrice = unitPrice;
-        }
-
-        if (totalPrice !== undefined) {
-          product.totalPrice = totalPrice;
-        }
-
         products.push(product);
       }
+
+      // Check if products exist in database
+      await this.checkProductsExistence(products);
 
       return {
         products,
@@ -176,6 +170,20 @@ export class ReceiptsService {
         'Failed to parse receipt data',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
+    }
+  }
+
+  private async checkProductsExistence(products: ReceiptProductDto[]): Promise<void> {
+    for (const product of products) {
+      const existingProduct = await this.productsService.findByName(product.product);
+
+      if (existingProduct) {
+        product.doesExist = true;
+        product.pointValue = existingProduct.pointValue;
+      } else {
+        product.doesExist = false;
+        product.pointValue = 0;
+      }
     }
   }
 
@@ -205,29 +213,7 @@ export class ReceiptsService {
     return parseFloat(qty) || 1;
   }
 
-  private extractUnitPrice(item: any): number | undefined {
-    const price =
-      item.unitPrice ||
-      item.cena ||
-      item.price ||
-      item.jedinicnaCena ||
-      item.unit_price;
-
-    return price !== undefined ? parseFloat(price) : undefined;
-  }
-
-  private extractTotalPrice(item: any): number | undefined {
-    const total =
-      item.totalPrice ||
-      item.ukupno ||
-      item.total ||
-      item.iznos ||
-      item.total_price;
-
-    return total !== undefined ? parseFloat(total) : undefined;
-  }
-
-  private parseReceiptFromHtml(html: string): ProcessReceiptResponseDto {
+  private async parseReceiptFromHtml(html: string): Promise<ProcessReceiptResponseDto> {
     try {
       const $ = cheerio.load(html);
       const products: ReceiptProductDto[] = [];
@@ -312,8 +298,6 @@ export class ReceiptsService {
               products.push({
                 product: currentProduct.name,
                 quantity: currentProduct.qty || 1,
-                unitPrice: currentProduct.price,
-                totalPrice: currentProduct.total,
               });
 
               // Reset for next product
@@ -354,6 +338,9 @@ export class ReceiptsService {
           HttpStatus.UNPROCESSABLE_ENTITY,
         );
       }
+
+      // Check if products exist in database
+      await this.checkProductsExistence(products);
 
       return {
         products,

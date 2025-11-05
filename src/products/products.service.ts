@@ -52,4 +52,17 @@ export class ProductsService {
   async delete(id: string): Promise<void> {
     await this.productsRepository.delete(id);
   }
+
+  async existsByName(productName: string): Promise<boolean> {
+    const count = await this.productsRepository.count({
+      where: { name: productName },
+    });
+    return count > 0;
+  }
+
+  async findByName(productName: string): Promise<Product | null> {
+    return this.productsRepository.findOne({
+      where: { name: productName },
+    });
+  }
 }

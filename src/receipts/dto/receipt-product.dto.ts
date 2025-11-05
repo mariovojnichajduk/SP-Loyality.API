@@ -14,18 +14,18 @@ export class ReceiptProductDto {
   quantity: number;
 
   @ApiProperty({
-    description: 'Unit price',
-    example: 150.00,
+    description: 'Whether the product exists in the database',
+    example: true,
     required: false,
   })
-  unitPrice?: number;
+  doesExist?: boolean;
 
   @ApiProperty({
-    description: 'Total price for this line item',
-    example: 300.00,
+    description: 'Points value of the product (0 if product does not exist)',
+    example: 10,
     required: false,
   })
-  totalPrice?: number;
+  pointValue?: number;
 }
 
 export class ProcessReceiptResponseDto {
