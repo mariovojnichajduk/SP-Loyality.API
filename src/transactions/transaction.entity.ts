@@ -5,13 +5,12 @@ import {
   CreateDateColumn,
   ManyToOne,
   JoinColumn,
-  ManyToMany,
-  JoinTable,
+  OneToMany,
   BaseEntity,
 } from 'typeorm';
 import { User } from '../users/user.entity';
 import { Shop } from '../shops/shop.entity';
-import { Product } from '../products/product.entity';
+import { TransactionProduct } from './transaction-product.entity';
 
 @Entity('transactions')
 export class Transaction extends BaseEntity {
@@ -41,13 +40,8 @@ export class Transaction extends BaseEntity {
   @JoinColumn({ name: 'shopId' })
   shop: Shop;
 
-  @ManyToMany(() => Product, (product) => product.transactions)
-  @JoinTable({
-    name: 'transaction_products',
-    joinColumn: { name: 'transactionId', referencedColumnName: 'id' },
-    inverseJoinColumn: { name: 'productId', referencedColumnName: 'id' },
-  })
-  products: Product[];
+  @OneToMany(() => TransactionProduct, (tp) => tp.transaction)
+  transactionProducts: TransactionProduct[];
 
   @CreateDateColumn()
   createdAt: Date;

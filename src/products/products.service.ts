@@ -1,10 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Product, ProductStatus } from './product.entity';
 import { ProductApprovalRequest } from './product-approval-request.entity';
 import { UsersService } from '../users/users.service';
 import { ShopsService } from '../shops/shops.service';
+import { ReceiptsService } from '../receipts/receipts.service';
 
 @Injectable()
 export class ProductsService {
@@ -15,6 +16,8 @@ export class ProductsService {
     private approvalRequestsRepository: Repository<ProductApprovalRequest>,
     private usersService: UsersService,
     private shopsService: ShopsService,
+    @Inject(forwardRef(() => ReceiptsService))
+    private receiptsService: ReceiptsService,
   ) {}
 
   async findAll(): Promise<Product[]> {
@@ -132,7 +135,7 @@ export class ProductsService {
     productId: string,
     pointValue: number,
     shopId?: string,
-  ): Promise<{ product: Product; rewardedUsers: number }> {
+  ): Promise<{ product: Product; rewardedUsers: number; pendingPointsAwarded: number }> {
     // Update product
     const updateData: Partial<Product> = {
       pointValue,
@@ -153,22 +156,26 @@ export class ProductsService {
       throw new Error('Product not found');
     }
 
-    // Find all users who requested this product
+    // Find all users who requested this product (old system)
     const approvalRequests = await this.approvalRequestsRepository.find({
       where: { productId, isRewarded: false },
       relations: ['user'],
     });
 
-    // Reward users with points and mark requests as rewarded
+    // Reward users with points and mark requests as rewarded (old system)
     for (const request of approvalRequests) {
       await this.usersService.addPoints(request.userId, pointValue);
       request.isRewarded = true;
       await this.approvalRequestsRepository.save(request);
     }
 
+    // Award pending points for users who scanned receipts with this unapproved product
+    const pendingPointsResult = await this.receiptsService.awardPendingPointsForProduct(productId);
+
     return {
       product,
-      rewardedUsers: approvalRequests.length,
+      rewardedUsers: approvalRequests.length + pendingPointsResult.usersAwarded,
+      pendingPointsAwarded: pendingPointsResult.totalPointsAwarded,
     };
   }
 

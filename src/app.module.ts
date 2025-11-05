@@ -304,7 +304,7 @@ const authenticate = async (email: string, password: string) => {
                               };
                             }
 
-                            // Update product with point value and shop
+                            // Update product manually
                             product.pointValue = pointValue;
                             product.isApproved = true;
                             product.status = ProductStatus.AVAILABLE;
@@ -313,7 +313,7 @@ const authenticate = async (email: string, password: string) => {
                             }
                             await product.save();
 
-                            // Find and reward all users who requested this product
+                            // Find and reward users who requested this product (old system)
                             const approvalRequests = await ProductApprovalRequest.find({
                               where: { productId, isRewarded: false },
                               relations: ['user'],
@@ -328,15 +328,59 @@ const authenticate = async (email: string, password: string) => {
                               }
                             }
 
+                            // Award pending points from receipts using entity manager
+                            // Get entity manager from Product repository
+                            const entityManager = Product.getRepository().manager;
+
+                            // Find unpaid transaction products with their transactions
+                            const unpaidTPs = await entityManager.query(
+                              `SELECT tp.*, t."userId", t.id as transaction_id
+                               FROM transaction_products tp
+                               JOIN transactions t ON tp."transactionId" = t.id
+                               WHERE tp."productId" = $1 AND tp."pointsAwarded" = false`,
+                              [productId]
+                            );
+
+                            let pendingPointsAwarded = 0;
+                            const uniqueUsers = new Set<string>();
+
+                            for (const tp of unpaidTPs) {
+                              const pointsToAward = product.pointValue * tp.quantity;
+
+                              // Update transaction points
+                              await entityManager.query(
+                                `UPDATE transactions SET points = points + $1 WHERE id = $2`,
+                                [pointsToAward, tp.transaction_id]
+                              );
+
+                              // Award points to user
+                              await entityManager.query(
+                                `UPDATE users SET points = points + $1 WHERE id = $2`,
+                                [pointsToAward, tp.userId]
+                              );
+
+                              // Mark as awarded and update points value
+                              await entityManager.query(
+                                `UPDATE transaction_products
+                                 SET "pointsAwarded" = true, "pointsValue" = $1
+                                 WHERE "transactionId" = $2 AND "productId" = $3`,
+                                [pointsToAward, tp.transactionId, productId]
+                              );
+
+                              pendingPointsAwarded += pointsToAward;
+                              uniqueUsers.add(tp.userId);
+                            }
+
                             return {
                               record: record.toJSON(currentAdmin),
                               notice: {
-                                message: `Product approved! ${product.pointValue} points set. ${approvalRequests.length} user(s) rewarded.`,
+                                message: `Product approved! ${product.pointValue} points set. ${approvalRequests.length + uniqueUsers.size} user(s) rewarded${pendingPointsAwarded > 0 ? ` (including ${pendingPointsAwarded} pending points from ${unpaidTPs.length} receipts)` : ''}.`,
                                 type: 'success',
                               },
                               redirectUrl: '/admin/resources/Approving',
                             };
                           } catch (error) {
+                            console.error('Product approval error:', error);
                             return {
                               record: record.toJSON(currentAdmin),
                               notice: {

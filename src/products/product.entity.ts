@@ -6,11 +6,11 @@ import {
   UpdateDateColumn,
   ManyToOne,
   JoinColumn,
-  ManyToMany,
+  OneToMany,
   BaseEntity,
 } from 'typeorm';
 import { Shop } from '../shops/shop.entity';
-import { Transaction } from '../transactions/transaction.entity';
+import { TransactionProduct } from '../transactions/transaction-product.entity';
 
 export enum ProductStatus {
   AVAILABLE = 'available',
@@ -45,8 +45,8 @@ export class Product extends BaseEntity {
   @JoinColumn({ name: 'shopId' })
   shop: Shop;
 
-  @ManyToMany(() => Transaction, (transaction) => transaction.products)
-  transactions: Transaction[];
+  @OneToMany(() => TransactionProduct, (tp) => tp.product)
+  transactionProducts: TransactionProduct[];
 
   @CreateDateColumn()
   createdAt: Date;

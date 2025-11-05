@@ -1,4 +1,4 @@
-import { Injectable, HttpException, HttpStatus, Logger } from '@nestjs/common';
+import { Injectable, HttpException, HttpStatus, Logger, Inject, forwardRef } from '@nestjs/common';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { ProcessReceiptDto } from './dto/process-receipt.dto';
@@ -17,6 +17,7 @@ export class ReceiptsService {
   private readonly logger = new Logger(ReceiptsService.name);
 
   constructor(
+    @Inject(forwardRef(() => ProductsService))
     private readonly productsService: ProductsService,
     private readonly shopsService: ShopsService,
     private readonly transactionsService: TransactionsService,
@@ -512,29 +513,6 @@ export class ReceiptsService {
         }
       }
 
-      // Calculate total points from approved products (those with pointValue > 0)
-      const approvedProducts = receiptData.products.filter(
-        (p) => p.doesExist && (p.pointValue || 0) > 0,
-      );
-
-      if (approvedProducts.length === 0) {
-        throw new HttpException(
-          'No approved products to collect points from',
-          HttpStatus.BAD_REQUEST,
-        );
-      }
-
-      const totalPoints = approvedProducts.reduce((sum, product) => {
-        return sum + (product.pointValue || 0) * product.quantity;
-      }, 0);
-
-      if (totalPoints <= 0) {
-        throw new HttpException(
-          'No points to collect',
-          HttpStatus.BAD_REQUEST,
-        );
-      }
-
       // Ensure we have a shop ID
       if (!receiptData.shopId) {
         throw new HttpException(
@@ -543,30 +521,66 @@ export class ReceiptsService {
         );
       }
 
-      // Get product entities for the transaction
-      const productEntities: Product[] = [];
-      for (const product of approvedProducts) {
-        const productEntity = await this.productsService.findByName(product.product);
-        if (productEntity) {
-          productEntities.push(productEntity);
-        }
-      }
+      // Separate approved and unapproved products
+      const approvedProducts = receiptData.products.filter(
+        (p) => p.doesExist && (p.pointValue || 0) > 0,
+      );
 
-      // Create transaction
+      const unapprovedProducts = receiptData.products.filter(
+        (p) => p.doesExist && (p.pointValue || 0) === 0,
+      );
+
+      // Calculate total points from approved products only
+      const totalPoints = approvedProducts.reduce((sum, product) => {
+        return sum + (product.pointValue || 0) * product.quantity;
+      }, 0);
+
+      // Create transaction (even if no points awarded yet, to track the receipt)
       const transaction = await this.transactionsService.create({
         userId,
         shopId: receiptData.shopId,
         date: receiptData.receiptDate ? new Date(receiptData.receiptDate) : new Date(),
         points: totalPoints,
-        products: productEntities,
         receiptId: receiptData.receiptId,
       });
 
-      // Add points to user
-      await this.pointsService.addPoints(userId, totalPoints);
+      // Create transaction-product records for approved products (points awarded)
+      for (const product of approvedProducts) {
+        const productEntity = await this.productsService.findByName(product.product);
+        if (productEntity) {
+          await this.transactionsService.createTransactionProduct(
+            transaction.id,
+            productEntity.id,
+            product.quantity,
+            (product.pointValue || 0) * product.quantity,
+            true, // Points awarded
+          );
+        }
+      }
+
+      // Create transaction-product records for unapproved products (points NOT awarded yet)
+      for (const product of unapprovedProducts) {
+        const productEntity = await this.productsService.findByName(product.product);
+        if (productEntity) {
+          await this.transactionsService.createTransactionProduct(
+            transaction.id,
+            productEntity.id,
+            product.quantity,
+            0, // No points yet
+            false, // Points not awarded
+          );
+        }
+      }
+
+      // Add points to user (only for approved products)
+      if (totalPoints > 0) {
+        await this.pointsService.addPoints(userId, totalPoints);
+      }
 
       return {
-        message: 'Points collected successfully',
+        message: totalPoints > 0
+          ? 'Points collected successfully'
+          : 'Receipt saved. Points will be awarded when products are approved.',
         pointsAwarded: totalPoints,
         transactionId: transaction.id,
       };
@@ -579,6 +593,75 @@ export class ReceiptsService {
 
       throw new HttpException(
         'An error occurred while collecting points',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async awardPendingPointsForProduct(productId: string): Promise<{
+    usersAwarded: number;
+    totalPointsAwarded: number;
+  }> {
+    try {
+      // Find all transaction-product records where this product hasn't awarded points yet
+      const unpaidTransactionProducts = await this.transactionsService.findTransactionsWithUnpaidProduct(productId);
+
+      if (unpaidTransactionProducts.length === 0) {
+        return {
+          usersAwarded: 0,
+          totalPointsAwarded: 0,
+        };
+      }
+
+      // Get the product to find its point value
+      const product = await this.productsService.findById(productId);
+      if (!product) {
+        throw new HttpException('Product not found', HttpStatus.NOT_FOUND);
+      }
+
+      let totalPointsAwarded = 0;
+      const uniqueUsers = new Set<string>();
+
+      // Award points for each transaction
+      for (const tp of unpaidTransactionProducts) {
+        const pointsToAward = product.pointValue * tp.quantity;
+
+        // Update transaction total points
+        const transaction = tp.transaction;
+        transaction.points += pointsToAward;
+        await transaction.save();
+
+        // Award points to user
+        await this.pointsService.addPoints(transaction.userId, pointsToAward);
+
+        // Mark this transaction-product as awarded
+        await this.transactionsService.markProductAsAwarded(tp.transactionId, productId);
+
+        // Update the pointsValue in junction table
+        tp.pointsValue = pointsToAward;
+        await tp.save();
+
+        totalPointsAwarded += pointsToAward;
+        uniqueUsers.add(transaction.userId);
+      }
+
+      this.logger.log(
+        `Awarded ${totalPointsAwarded} points to ${uniqueUsers.size} users for product ${product.name}`,
+      );
+
+      return {
+        usersAwarded: uniqueUsers.size,
+        totalPointsAwarded,
+      };
+    } catch (error) {
+      this.logger.error('Error awarding pending points:', error);
+
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      throw new HttpException(
+        'An error occurred while awarding pending points',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
