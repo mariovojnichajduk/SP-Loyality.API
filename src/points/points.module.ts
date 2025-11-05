@@ -7,5 +7,6 @@ import { UsersModule } from '../users/users.module';
   imports: [UsersModule],
   controllers: [PointsController],
   providers: [PointsService],
+  exports: [PointsService],
 })
 export class PointsModule {}

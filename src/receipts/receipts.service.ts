@@ -8,6 +8,9 @@ import {
 } from './dto/receipt-product.dto';
 import { ProductsService } from '../products/products.service';
 import { ShopsService } from '../shops/shops.service';
+import { TransactionsService } from '../transactions/transactions.service';
+import { PointsService } from '../points/points.service';
+import { Product } from '../products/product.entity';
 
 @Injectable()
 export class ReceiptsService {
@@ -16,6 +19,8 @@ export class ReceiptsService {
   constructor(
     private readonly productsService: ProductsService,
     private readonly shopsService: ShopsService,
+    private readonly transactionsService: TransactionsService,
+    private readonly pointsService: PointsService,
   ) {}
 
   async processReceipt(
@@ -118,6 +123,7 @@ export class ReceiptsService {
       let receiptDate: string | undefined;
       let storeName: string | undefined;
       let rawStoreName: string | undefined;
+      let shopLocation: string | undefined;
 
       // Try different possible structures
       if (data.items) {
@@ -141,7 +147,16 @@ export class ReceiptsService {
         rawStoreName = data.storeName || data.prodavnica || data.seller || data.shopName;
         if (rawStoreName) {
           storeName = this.extractCleanStoreName(rawStoreName);
+          this.logger.log(`API - Found store name - Raw: "${rawStoreName}", Clean: "${storeName}"`);
         }
+      } else {
+        this.logger.log('API - No store name found in response data');
+      }
+
+      // Extract location from API data
+      if (data.location || data.address || data.adresa) {
+        shopLocation = data.location || data.address || data.adresa;
+        this.logger.log(`API - Found location: "${shopLocation}"`);
       }
 
       // Parse items
@@ -157,10 +172,20 @@ export class ReceiptsService {
       // Check if products exist in database
       await this.checkProductsExistence(products);
 
-      // Look up shop by name
+      // Look up shop by name, create if doesn't exist
       let shopId: string | undefined;
       if (storeName) {
-        const shop = await this.shopsService.findByName(storeName);
+        let shop = await this.shopsService.findByName(storeName);
+
+        // Auto-create shop if it doesn't exist
+        if (!shop && rawStoreName) {
+          this.logger.log(`Creating new shop: "${storeName}" (raw: "${rawStoreName}", location: "${shopLocation || 'Unknown'}")`);
+          shop = await this.shopsService.create({
+            name: rawStoreName,
+            location: shopLocation || 'Unknown',
+          });
+        }
+
         if (shop) {
           shopId = shop.id;
         }
@@ -223,12 +248,22 @@ export class ReceiptsService {
   }
 
   private extractCleanStoreName(rawStoreName: string): string {
-    // Format is often: "1235237-287 - Maxi"
-    // We want to extract just "Maxi"
-    const match = rawStoreName.match(/\d+-\d+\s*-\s*(.+)/);
+    // Format can be:
+    // "1235237-287 - Maxi" -> extract "Maxi"
+    // "1054272-Bomax doo" -> extract "Bomax doo"
+
+    // First try: "number-number - Name" format
+    let match = rawStoreName.match(/\d+-\d+\s*-\s*(.+)/);
     if (match) {
       return match[1].trim();
     }
+
+    // Second try: "number-Name" format
+    match = rawStoreName.match(/\d+-(.+)/);
+    if (match) {
+      return match[1].trim();
+    }
+
     // If no match, return the raw name cleaned up
     return rawStoreName.trim();
   }
@@ -251,6 +286,7 @@ export class ReceiptsService {
       // Track if we're in the products section
       let inProductsSection = false;
       let currentProduct: { name?: string; price?: number; qty?: number; total?: number } = {};
+      let shopLocation: string | undefined;
 
       // Metadata fields to skip (these are NOT products)
       const skipPatterns = [
@@ -334,11 +370,24 @@ export class ReceiptsService {
           }
         }
 
-        // Extract store name (format: "1235237-287 - Maxi" or similar)
+        // Extract store name (formats: "1235237-287 - Maxi" or "1054272-Bomax doo")
         // Usually found near the top of the receipt
-        if (!rawStoreName && line.match(/\d+-\d+\s*-\s*[A-Za-zА-Яа-я]/)) {
+        if (!rawStoreName && line.match(/\d+-[A-Za-zА-Яа-я0-9\s]+/)) {
           rawStoreName = line.trim();
           storeName = this.extractCleanStoreName(rawStoreName);
+          this.logger.log(`Found store name - Raw: "${rawStoreName}", Clean: "${storeName}"`);
+
+          // The next non-empty line should be the location
+          const nextLineIndex = lines.findIndex((l, idx) => idx > i && l.trim().length > 0);
+          if (nextLineIndex !== -1) {
+            const potentialLocation = lines[nextLineIndex].trim();
+            // Make sure it's not a product header or other metadata
+            if (!skipPatterns.some(pattern => pattern.test(potentialLocation)) &&
+                !potentialLocation.match(/Назив|Цена|Кол/i)) {
+              shopLocation = potentialLocation;
+              this.logger.log(`Found shop location: "${shopLocation}"`);
+            }
+          }
         }
 
         // Extract date
@@ -361,10 +410,20 @@ export class ReceiptsService {
       // Check if products exist in database
       await this.checkProductsExistence(products);
 
-      // Look up shop by name
+      // Look up shop by name, create if doesn't exist
       let shopId: string | undefined;
       if (storeName) {
-        const shop = await this.shopsService.findByName(storeName);
+        let shop = await this.shopsService.findByName(storeName);
+
+        // Auto-create shop if it doesn't exist
+        if (!shop && rawStoreName) {
+          this.logger.log(`Creating new shop: "${storeName}" (raw: "${rawStoreName}", location: "${shopLocation || 'Unknown'}")`);
+          shop = await this.shopsService.create({
+            name: rawStoreName,
+            location: shopLocation || 'Unknown',
+          });
+        }
+
         if (shop) {
           shopId = shop.id;
         }
@@ -386,6 +445,82 @@ export class ReceiptsService {
 
       throw new HttpException(
         'Failed to parse receipt HTML',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async collectPoints(
+    userId: string,
+    receiptData: ProcessReceiptResponseDto,
+  ): Promise<{ message: string; pointsAwarded: number; transactionId: string }> {
+    try {
+      // Calculate total points from approved products (those with pointValue > 0)
+      const approvedProducts = receiptData.products.filter(
+        (p) => p.doesExist && (p.pointValue || 0) > 0,
+      );
+
+      if (approvedProducts.length === 0) {
+        throw new HttpException(
+          'No approved products to collect points from',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      const totalPoints = approvedProducts.reduce((sum, product) => {
+        return sum + (product.pointValue || 0) * product.quantity;
+      }, 0);
+
+      if (totalPoints <= 0) {
+        throw new HttpException(
+          'No points to collect',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      // Ensure we have a shop ID
+      if (!receiptData.shopId) {
+        throw new HttpException(
+          'Shop information is required to collect points',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      // Get product entities for the transaction
+      const productEntities: Product[] = [];
+      for (const product of approvedProducts) {
+        const productEntity = await this.productsService.findByName(product.product);
+        if (productEntity) {
+          productEntities.push(productEntity);
+        }
+      }
+
+      // Create transaction
+      const transaction = await this.transactionsService.create({
+        userId,
+        shopId: receiptData.shopId,
+        date: receiptData.receiptDate ? new Date(receiptData.receiptDate) : new Date(),
+        points: totalPoints,
+        products: productEntities,
+      });
+
+      // Add points to user
+      await this.pointsService.addPoints(userId, totalPoints);
+
+      return {
+        message: 'Points collected successfully',
+        pointsAwarded: totalPoints,
+        transactionId: transaction.id,
+      };
+    } catch (error) {
+      this.logger.error('Error collecting points:', error);
+
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      throw new HttpException(
+        'An error occurred while collecting points',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

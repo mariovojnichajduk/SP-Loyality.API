@@ -16,4 +16,17 @@ export class PointsService {
       points: user.points,
     };
   }
+
+  async addPoints(userId: string, pointsToAdd: number): Promise<number> {
+    const user = await this.usersService.findById(userId);
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    user.points = (user.points || 0) + pointsToAdd;
+    await user.save();
+
+    return user.points;
+  }
 }

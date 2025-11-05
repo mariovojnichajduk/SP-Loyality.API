@@ -1,8 +1,9 @@
-import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Controller, Post, Body, HttpCode, HttpStatus, UseGuards, Request } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { ReceiptsService } from './receipts.service';
 import { ProcessReceiptDto } from './dto/process-receipt.dto';
 import { ProcessReceiptResponseDto } from './dto/receipt-product.dto';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @ApiTags('receipts')
 @Controller('receipts')
@@ -42,5 +43,33 @@ export class ReceiptsController {
     @Body() processReceiptDto: ProcessReceiptDto,
   ): Promise<ProcessReceiptResponseDto> {
     return this.receiptsService.processReceipt(processReceiptDto);
+  }
+
+  @Post('collect-points')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Collect points from processed receipt',
+    description:
+      'Creates a transaction record and awards points to the user for approved products in the receipt.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Points collected successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid receipt data or no points to collect',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+  })
+  async collectPoints(
+    @Request() req,
+    @Body() body: { receiptData: ProcessReceiptResponseDto },
+  ): Promise<{ message: string; pointsAwarded: number; transactionId: string }> {
+    return this.receiptsService.collectPoints(req.user.userId, body.receiptData);
   }
 }

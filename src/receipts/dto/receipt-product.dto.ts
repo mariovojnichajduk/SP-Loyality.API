@@ -57,7 +57,7 @@ export class ProcessReceiptResponseDto {
   rawStoreName?: string;
 
   @ApiProperty({
-    description: 'Shop ID from database (null if shop not found by name)',
+    description: 'Shop ID from database',
     example: '123e4567-e89b-12d3-a456-426614174000',
     required: false,
   })
