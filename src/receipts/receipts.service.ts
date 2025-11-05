@@ -148,22 +148,17 @@ export class ReceiptsService {
         rawStoreName = data.storeName || data.prodavnica || data.seller || data.shopName;
         if (rawStoreName) {
           storeName = this.extractCleanStoreName(rawStoreName);
-          this.logger.log(`API - Found store name - Raw: "${rawStoreName}", Clean: "${storeName}"`);
         }
-      } else {
-        this.logger.log('API - No store name found in response data');
       }
 
       // Extract location from API data
       if (data.location || data.address || data.adresa) {
         shopLocation = data.location || data.address || data.adresa;
-        this.logger.log(`API - Found location: "${shopLocation}"`);
       }
 
       // Extract receipt ID from API data
       if (data.receiptId || data.receiptNumber || data.pfrBroj) {
         receiptId = data.receiptId || data.receiptNumber || data.pfrBroj;
-        this.logger.log(`API - Found receipt ID: "${receiptId}"`);
       }
 
       // Parse items
@@ -184,9 +179,7 @@ export class ReceiptsService {
       if (rawStoreName) {
         let shop = await this.shopsService.findByName(rawStoreName);
 
-        // Auto-create shop if it doesn't exist
         if (!shop) {
-          this.logger.log(`Creating new shop: "${rawStoreName}" (location: "${shopLocation || 'Unknown'}")`);
           shop = await this.shopsService.create({
             name: rawStoreName,
             location: shopLocation || 'Unknown',
@@ -277,6 +270,89 @@ export class ReceiptsService {
     return rawStoreName.trim();
   }
 
+  private extractShopLocation(lines: string[], startIndex: number): string | undefined {
+    // Extract shop location from lines following the shop name
+    // Location is typically on the next line after rawStoreName, may have "Адреса" label before it
+
+    for (let i = startIndex + 1; i < lines.length && i < startIndex + 10; i++) {
+      const line = lines[i].trim();
+
+      if (line.length === 0) continue;
+
+      // Skip metadata labels and product headers
+      const isMetadataLabel = line.match(/^(ПИБ|Датум|Време|Назив|Цена|Кол):/i);
+      const isProductHeader = line.match(/Назив.*Цена.*Кол/i);
+      const isAnotherShopId = line.match(/^\d+-[A-Za-zА-Яа-я0-9\s]+$/);
+      const isAddressLabel = line.match(/^Адреса$/i) || line === 'Адреса';
+
+      // Skip "Адреса" label and continue searching
+      if (isAddressLabel) {
+        continue;
+      }
+
+      // If line doesn't match skip patterns, it's the location
+      if (!isMetadataLabel && !isProductHeader && !isAnotherShopId) {
+        return line;
+      }
+    }
+
+    return undefined;
+  }
+
+  private extractReceiptId(line: string): string | undefined {
+    // Extract receipt ID in format: "M4XG7WCS-M4XG7WCS-56122"
+    if (line.match(/ПФР број рачуна/i)) {
+      const idMatch = line.match(/ПФР број рачуна:\s*([A-Z0-9]+-[A-Z0-9]+-[0-9]+)/i);
+      if (idMatch) {
+        return idMatch[1];
+      }
+    }
+    return undefined;
+  }
+
+  private extractReceiptDate(line: string): string | undefined {
+    // Extract date and time from receipt
+    if (line.match(/датум и време продaje/i) || line.match(/\d{2}[.\/]\d{2}[.\/]\d{4}/)) {
+      const dateMatch = line.match(/(\d{2}[.\/]\d{2}[.\/]\d{4}\s+\d{2}:\d{2}:\d{2})/);
+      if (dateMatch) {
+        return dateMatch[1];
+      }
+    }
+    return undefined;
+  }
+
+  private parseProductLine(line: string, currentProduct: any, products: ReceiptProductDto[]): any {
+    // Check if line contains price/quantity/total numbers
+    const numberMatch = line.match(/(\d+[.,]\d+)\s+(\d+[.,]?\d*)\s+(\d+[.,]\d+)/);
+
+    if (numberMatch) {
+      const unitPrice = parseFloat(numberMatch[1].replace(',', '.'));
+      const quantity = parseFloat(numberMatch[2].replace(',', '.'));
+      const totalPrice = parseFloat(numberMatch[3].replace(',', '.'));
+
+      currentProduct.price = unitPrice;
+      currentProduct.qty = quantity;
+      currentProduct.total = totalPrice;
+
+      // If we have a product name from previous line, save it
+      if (currentProduct.name) {
+        products.push({
+          product: currentProduct.name,
+          quantity: currentProduct.qty || 1,
+        });
+        return {}; // Reset for next product
+      }
+    } else if (line.length > 3 && !line.match(/^\d+$/)) {
+      // This looks like a product name line
+      const cleanName = line.replace(/\([ЂЕЃABC]\)/gi, '').trim();
+      if (cleanName) {
+        currentProduct.name = cleanName;
+      }
+    }
+
+    return currentProduct;
+  }
+
   private async parseReceiptFromHtml(html: string): Promise<ProcessReceiptResponseDto> {
     try {
       const $ = cheerio.load(html);
@@ -342,102 +418,29 @@ export class ReceiptsService {
             continue;
           }
 
-          // Serbian receipts typically have two-line format:
-          // Line 1: Product name
-          // Line 2: Price, Quantity, Total (separated by spaces)
-
-          // Check if line contains numbers (likely price/qty/total line)
-          const numberMatch = line.match(/(\d+[.,]\d+)\s+(\d+[.,]?\d*)\s+(\d+[.,]\d+)/);
-
-          if (numberMatch) {
-            // This is a numbers line (price, qty, total)
-            const unitPrice = parseFloat(numberMatch[1].replace(',', '.'));
-            const quantity = parseFloat(numberMatch[2].replace(',', '.'));
-            const totalPrice = parseFloat(numberMatch[3].replace(',', '.'));
-
-            currentProduct.price = unitPrice;
-            currentProduct.qty = quantity;
-            currentProduct.total = totalPrice;
-
-            // If we have a product name from previous line, save it
-            if (currentProduct.name) {
-              products.push({
-                product: currentProduct.name,
-                quantity: currentProduct.qty || 1,
-              });
-
-              // Reset for next product
-              currentProduct = {};
-            }
-          } else if (line.length > 3 && !line.match(/^\d+$/)) {
-            // This looks like a product name line
-            // Clean up the line (remove tax indicators like (Ђ), (Е), etc.)
-            const cleanName = line.replace(/\([ЂЕЃABC]\)/gi, '').trim();
-
-            if (cleanName && !skipPatterns.some(pattern => pattern.test(cleanName))) {
-              currentProduct.name = cleanName;
-            }
-          }
+          currentProduct = this.parseProductLine(line, currentProduct, products);
         }
 
         // Extract store name (formats: "1235237-287 - Maxi" or "1054272-Bomax doo")
-        // Usually found near the top of the receipt
         if (!rawStoreName && line.match(/\d+-[A-Za-zА-Яа-я0-9\s]+/)) {
           rawStoreName = line.trim();
           storeName = this.extractCleanStoreName(rawStoreName);
-          this.logger.log(`Found store name - Raw: "${rawStoreName}", Clean: "${storeName}"`);
-
-          // The next non-empty line is the location
-          // Look ahead in the lines array starting from current position
-          this.logger.log(`Searching for location after shop name, starting at line ${i + 1}`);
-          for (let j = i + 1; j < lines.length && j < i + 10; j++) { // Check up to 10 lines ahead
-            const nextLine = lines[j].trim();
-            this.logger.log(`Line ${j}: "${nextLine}" (length: ${nextLine.length})`);
-
-            if (nextLine.length > 0) {
-              // Skip metadata labels and the word "Адреса" (Address label)
-              const isMetadataLabel = nextLine.match(/^(ПИБ|Датум|Време|Назив|Цена|Кол):/i);
-              const isProductHeader = nextLine.match(/Назив.*Цена.*Кол/i);
-              const isAnotherShopId = nextLine.match(/^\d+-[A-Za-zА-Яа-я0-9\s]+$/);
-              const isAddressLabel = nextLine.match(/^Адреса$/i) || nextLine === 'Адреса';
-
-              this.logger.log(`  isMetadataLabel: ${!!isMetadataLabel}, isProductHeader: ${!!isProductHeader}, isAnotherShopId: ${!!isAnotherShopId}, isAddressLabel: ${!!isAddressLabel}`);
-
-              if (isAddressLabel) {
-                // If we find "Адреса", skip it and continue to next line
-                this.logger.log(`Found 'Адреса' label, continuing to next line...`);
-                continue;
-              }
-
-              if (!isMetadataLabel && !isProductHeader && !isAnotherShopId) {
-                shopLocation = nextLine;
-                this.logger.log(`✓ Found shop location: "${shopLocation}"`);
-                break; // Found the location, stop searching
-              } else {
-                this.logger.log(`✗ Skipped line as non-location: "${nextLine}"`);
-              }
-            }
-          }
-
-          if (!shopLocation) {
-            this.logger.warn('No shop location found after scanning lines');
-          }
+          shopLocation = this.extractShopLocation(lines, i);
         }
 
         // Extract date
-        if (line.match(/датум и време продaje/i) || line.match(/\d{2}[.\/]\d{2}[.\/]\d{4}/)) {
-          const dateMatch = line.match(/(\d{2}[.\/]\d{2}[.\/]\d{4}\s+\d{2}:\d{2}:\d{2})/);
-          if (dateMatch) {
-            receiptDate = dateMatch[1];
+        if (!receiptDate) {
+          const extractedDate = this.extractReceiptDate(line);
+          if (extractedDate) {
+            receiptDate = extractedDate;
           }
         }
 
-        // Extract receipt ID (format: "M4XG7WCS-M4XG7WCS-56122")
-        if (line.match(/ПФР број рачуна/i)) {
-          const idMatch = line.match(/ПФР број рачуна:\s*([A-Z0-9]+-[A-Z0-9]+-[0-9]+)/i);
-          if (idMatch) {
-            receiptId = idMatch[1];
-            this.logger.log(`Found receipt ID: "${receiptId}"`);
+        // Extract receipt ID
+        if (!receiptId) {
+          const extractedId = this.extractReceiptId(line);
+          if (extractedId) {
+            receiptId = extractedId;
           }
         }
       }
@@ -458,9 +461,7 @@ export class ReceiptsService {
       if (rawStoreName) {
         let shop = await this.shopsService.findByName(rawStoreName);
 
-        // Auto-create shop if it doesn't exist
         if (!shop) {
-          this.logger.log(`Creating new shop: "${rawStoreName}" (location: "${shopLocation || 'Unknown'}")`);
           shop = await this.shopsService.create({
             name: rawStoreName,
             location: shopLocation || 'Unknown',
