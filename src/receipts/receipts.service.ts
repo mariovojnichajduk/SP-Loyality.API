@@ -124,6 +124,7 @@ export class ReceiptsService {
       let storeName: string | undefined;
       let rawStoreName: string | undefined;
       let shopLocation: string | undefined;
+      let receiptId: string | undefined;
 
       // Try different possible structures
       if (data.items) {
@@ -159,6 +160,12 @@ export class ReceiptsService {
         this.logger.log(`API - Found location: "${shopLocation}"`);
       }
 
+      // Extract receipt ID from API data
+      if (data.receiptId || data.receiptNumber || data.pfrBroj) {
+        receiptId = data.receiptId || data.receiptNumber || data.pfrBroj;
+        this.logger.log(`API - Found receipt ID: "${receiptId}"`);
+      }
+
       // Parse items
       for (const item of items) {
         const product: ReceiptProductDto = {
@@ -172,14 +179,14 @@ export class ReceiptsService {
       // Check if products exist in database
       await this.checkProductsExistence(products);
 
-      // Look up shop by name, create if doesn't exist
+      // Look up shop by rawStoreName, create if doesn't exist
       let shopId: string | undefined;
-      if (storeName) {
-        let shop = await this.shopsService.findByName(storeName);
+      if (rawStoreName) {
+        let shop = await this.shopsService.findByName(rawStoreName);
 
         // Auto-create shop if it doesn't exist
-        if (!shop && rawStoreName) {
-          this.logger.log(`Creating new shop: "${storeName}" (raw: "${rawStoreName}", location: "${shopLocation || 'Unknown'}")`);
+        if (!shop) {
+          this.logger.log(`Creating new shop: "${rawStoreName}" (location: "${shopLocation || 'Unknown'}")`);
           shop = await this.shopsService.create({
             name: rawStoreName,
             location: shopLocation || 'Unknown',
@@ -197,6 +204,8 @@ export class ReceiptsService {
         storeName,
         rawStoreName,
         shopId,
+        receiptId,
+        shopLocation,
       };
     } catch (error) {
       this.logger.error('Error parsing receipt data:', error);
@@ -287,6 +296,7 @@ export class ReceiptsService {
       let inProductsSection = false;
       let currentProduct: { name?: string; price?: number; qty?: number; total?: number } = {};
       let shopLocation: string | undefined;
+      let receiptId: string | undefined;
 
       // Metadata fields to skip (these are NOT products)
       const skipPatterns = [
@@ -377,16 +387,40 @@ export class ReceiptsService {
           storeName = this.extractCleanStoreName(rawStoreName);
           this.logger.log(`Found store name - Raw: "${rawStoreName}", Clean: "${storeName}"`);
 
-          // The next non-empty line should be the location
-          const nextLineIndex = lines.findIndex((l, idx) => idx > i && l.trim().length > 0);
-          if (nextLineIndex !== -1) {
-            const potentialLocation = lines[nextLineIndex].trim();
-            // Make sure it's not a product header or other metadata
-            if (!skipPatterns.some(pattern => pattern.test(potentialLocation)) &&
-                !potentialLocation.match(/Назив|Цена|Кол/i)) {
-              shopLocation = potentialLocation;
-              this.logger.log(`Found shop location: "${shopLocation}"`);
+          // The next non-empty line is the location
+          // Look ahead in the lines array starting from current position
+          this.logger.log(`Searching for location after shop name, starting at line ${i + 1}`);
+          for (let j = i + 1; j < lines.length && j < i + 10; j++) { // Check up to 10 lines ahead
+            const nextLine = lines[j].trim();
+            this.logger.log(`Line ${j}: "${nextLine}" (length: ${nextLine.length})`);
+
+            if (nextLine.length > 0) {
+              // Skip metadata labels and the word "Адреса" (Address label)
+              const isMetadataLabel = nextLine.match(/^(ПИБ|Датум|Време|Назив|Цена|Кол):/i);
+              const isProductHeader = nextLine.match(/Назив.*Цена.*Кол/i);
+              const isAnotherShopId = nextLine.match(/^\d+-[A-Za-zА-Яа-я0-9\s]+$/);
+              const isAddressLabel = nextLine.match(/^Адреса$/i) || nextLine === 'Адреса';
+
+              this.logger.log(`  isMetadataLabel: ${!!isMetadataLabel}, isProductHeader: ${!!isProductHeader}, isAnotherShopId: ${!!isAnotherShopId}, isAddressLabel: ${!!isAddressLabel}`);
+
+              if (isAddressLabel) {
+                // If we find "Адреса", skip it and continue to next line
+                this.logger.log(`Found 'Адреса' label, continuing to next line...`);
+                continue;
+              }
+
+              if (!isMetadataLabel && !isProductHeader && !isAnotherShopId) {
+                shopLocation = nextLine;
+                this.logger.log(`✓ Found shop location: "${shopLocation}"`);
+                break; // Found the location, stop searching
+              } else {
+                this.logger.log(`✗ Skipped line as non-location: "${nextLine}"`);
+              }
             }
+          }
+
+          if (!shopLocation) {
+            this.logger.warn('No shop location found after scanning lines');
           }
         }
 
@@ -395,6 +429,15 @@ export class ReceiptsService {
           const dateMatch = line.match(/(\d{2}[.\/]\d{2}[.\/]\d{4}\s+\d{2}:\d{2}:\d{2})/);
           if (dateMatch) {
             receiptDate = dateMatch[1];
+          }
+        }
+
+        // Extract receipt ID (format: "M4XG7WCS-M4XG7WCS-56122")
+        if (line.match(/ПФР број рачуна/i)) {
+          const idMatch = line.match(/ПФР број рачуна:\s*([A-Z0-9]+-[A-Z0-9]+-[0-9]+)/i);
+          if (idMatch) {
+            receiptId = idMatch[1];
+            this.logger.log(`Found receipt ID: "${receiptId}"`);
           }
         }
       }
@@ -410,14 +453,14 @@ export class ReceiptsService {
       // Check if products exist in database
       await this.checkProductsExistence(products);
 
-      // Look up shop by name, create if doesn't exist
+      // Look up shop by rawStoreName, create if doesn't exist
       let shopId: string | undefined;
-      if (storeName) {
-        let shop = await this.shopsService.findByName(storeName);
+      if (rawStoreName) {
+        let shop = await this.shopsService.findByName(rawStoreName);
 
         // Auto-create shop if it doesn't exist
-        if (!shop && rawStoreName) {
-          this.logger.log(`Creating new shop: "${storeName}" (raw: "${rawStoreName}", location: "${shopLocation || 'Unknown'}")`);
+        if (!shop) {
+          this.logger.log(`Creating new shop: "${rawStoreName}" (location: "${shopLocation || 'Unknown'}")`);
           shop = await this.shopsService.create({
             name: rawStoreName,
             location: shopLocation || 'Unknown',
@@ -435,6 +478,8 @@ export class ReceiptsService {
         storeName,
         rawStoreName,
         shopId,
+        receiptId,
+        shopLocation,
       };
     } catch (error) {
       this.logger.error('Error parsing HTML receipt:', error);
@@ -455,6 +500,17 @@ export class ReceiptsService {
     receiptData: ProcessReceiptResponseDto,
   ): Promise<{ message: string; pointsAwarded: number; transactionId: string }> {
     try {
+      // Check if receipt has already been processed
+      if (receiptData.receiptId) {
+        const existingTransaction = await this.transactionsService.findByReceiptId(receiptData.receiptId);
+        if (existingTransaction) {
+          throw new HttpException(
+            'This receipt has already been used to collect points',
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+      }
+
       // Calculate total points from approved products (those with pointValue > 0)
       const approvedProducts = receiptData.products.filter(
         (p) => p.doesExist && (p.pointValue || 0) > 0,
@@ -502,6 +558,7 @@ export class ReceiptsService {
         date: receiptData.receiptDate ? new Date(receiptData.receiptDate) : new Date(),
         points: totalPoints,
         products: productEntities,
+        receiptId: receiptData.receiptId,
       });
 
       // Add points to user

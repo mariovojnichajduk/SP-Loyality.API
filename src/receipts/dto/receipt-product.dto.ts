@@ -62,4 +62,18 @@ export class ProcessReceiptResponseDto {
     required: false,
   })
   shopId?: string;
+
+  @ApiProperty({
+    description: 'Receipt ID (PFR broj računa)',
+    example: 'M4XG7WCS-M4XG7WCS-56122',
+    required: false,
+  })
+  receiptId?: string;
+
+  @ApiProperty({
+    description: 'Shop location/address from receipt',
+    example: 'Пут Едварда Кардеља 13а 13А',
+    required: false,
+  })
+  shopLocation?: string;
 }

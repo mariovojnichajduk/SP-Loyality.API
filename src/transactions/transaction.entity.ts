@@ -30,6 +30,9 @@ export class Transaction extends BaseEntity {
   @Column({ type: 'integer' })
   points: number;
 
+  @Column({ type: 'varchar', nullable: true, unique: true })
+  receiptId: string;
+
   @ManyToOne(() => User, (user) => user.transactions)
   @JoinColumn({ name: 'userId' })
   user: User;

@@ -47,4 +47,10 @@ export class TransactionsService {
   async delete(id: string): Promise<void> {
     await this.transactionsRepository.delete(id);
   }
+
+  async findByReceiptId(receiptId: string): Promise<Transaction | null> {
+    return this.transactionsRepository.findOne({
+      where: { receiptId },
+    });
+  }
 }
