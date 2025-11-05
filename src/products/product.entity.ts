@@ -7,6 +7,7 @@ import {
   ManyToOne,
   JoinColumn,
   ManyToMany,
+  BaseEntity,
 } from 'typeorm';
 import { Shop } from '../shops/shop.entity';
 import { Transaction } from '../transactions/transaction.entity';
@@ -17,7 +18,7 @@ export enum ProductStatus {
 }
 
 @Entity('products')
-export class Product {
+export class Product extends BaseEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 

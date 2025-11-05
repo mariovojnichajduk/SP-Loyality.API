@@ -5,12 +5,13 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   OneToMany,
+  BaseEntity,
 } from 'typeorm';
 import { Product } from '../products/product.entity';
 import { Transaction } from '../transactions/transaction.entity';
 
 @Entity('shops')
-export class Shop {
+export class Shop extends BaseEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 

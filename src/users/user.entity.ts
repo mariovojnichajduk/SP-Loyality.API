@@ -7,13 +7,14 @@ import {
   OneToMany,
   ManyToMany,
   JoinTable,
+  BaseEntity,
 } from 'typeorm';
 import { Transaction } from '../transactions/transaction.entity';
 import { ApprovalRequest } from '../approval-requests/approval-request.entity';
 import { Shop } from '../shops/shop.entity';
 
 @Entity('users')
-export class User {
+export class User extends BaseEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 

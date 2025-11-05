@@ -6,6 +6,7 @@ import {
   UpdateDateColumn,
   ManyToOne,
   JoinColumn,
+  BaseEntity,
 } from 'typeorm';
 import { User } from '../users/user.entity';
 import { Product } from '../products/product.entity';
@@ -17,7 +18,7 @@ export enum ApprovalStatus {
 }
 
 @Entity('approval_requests')
-export class ApprovalRequest {
+export class ApprovalRequest extends BaseEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
