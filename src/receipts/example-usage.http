@@ -1,0 +1,28 @@
+### Process Serbian Fiscal Receipt
+POST http://localhost:3000/receipts/process
+Content-Type: application/json
+
+{
+  "receiptUrl": "https://suf.purs.gov.rs/v/?vl=A000WEc3V0NTTTRYRzdXQ1M62wAAJNoAABSR0gAAAAAAAAABmlMxAtEAAACmJ4F4n3aIjheDFGnNBc%2BELra9pZ298dD%2B8CzGG7V4Tf6DPQQkJTZFpo37P7PCAQbAcbXT9RmYkWEJfxlmrb3vItBP0K54Cxj6H3r3f3FgWWe9XkRg7hnCpfzQ6qqGPFqa7btl9GJhD%2B6JpL0RZ8wE8vBEfybMSbFoAQpbStejKnaUOum9NdEgWWiTqEI6VQSK1kLRzddd5rCIJHEVvx6ilZB%2FM6LdWzoHJsAbFhlafPD6QjL1cD34jE%2BMbd49vQPV5BC68dnZDHSA%2BJKdAAE%2FVuXLHDGuE0Z45dWyIF%2FKeL1rfxFe2rmNF%2B7gl2Ez2NntucS8BqLwKtsllbN7l6nfgM4sVqwK4caSUQxNS4CcqgbwBz7qJJd8NVPzOat3HkBfUuJTNrHlOE7SmWX7KUrmGt6Zfvey0FBT3w%2BA7uOjcUAEhRn%2FsgZgwA04eZGSAqIMb1xZfHgpeeZsZrJn0VqZy33wl3SeHHoDIcD0Pf8VKd3kCnQjCHxLhyWMSeqEqqyRpAHdxk5hToWakXZ%2F%2F5P3w8LeOGwbbttyndvXdAE%2BGmg%2Fy4OgBHYyRmelE%2FvbAAYFOemeNUItBR%2F%2FcCg%2FEjTHEa23PVgpPRoHEZDUahpXKyuSVQaE2%2FpbZdWAxS73DW53A3uTjBpkfzhbSswovJtlzJCkQLRliKntIpeW52HAAv6W1QfeDWCcidDfEEGmmrw%3D"
+}
+
+### Expected Response
+# {
+#   "products": [
+#     {
+#       "product": "Product Name 1",
+#       "quantity": 2,
+#       "unitPrice": 150.00,
+#       "totalPrice": 300.00
+#     },
+#     {
+#       "product": "Product Name 2",
+#       "quantity": 1,
+#       "unitPrice": 89.99,
+#       "totalPrice": 89.99
+#     }
+#   ],
+#   "totalAmount": 389.99,
+#   "receiptDate": "2025-11-05T12:30:00",
+#   "storeName": "Store Name"
+# }

@@ -17,6 +17,7 @@ import { Product } from './products/product.entity';
 import { Transaction } from './transactions/transaction.entity';
 import { ApprovalRequest, ApprovalStatus } from './approval-requests/approval-request.entity';
 import { StatisticsModule } from './statistics/statistics.module';
+import { ReceiptsModule } from './receipts/receipts.module';
 
 // Admin authentication using database users
 const authenticate = async (email: string, password: string) => {
@@ -413,6 +414,7 @@ const authenticate = async (email: string, password: string) => {
     ApprovalRequestsModule,
     PointsModule,
     StatisticsModule,
+    ReceiptsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
