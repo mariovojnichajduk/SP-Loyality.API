@@ -227,7 +227,8 @@ const authenticate = async (email: string, password: string) => {
                 {
                   resource: Product,
                   options: {
-                    navigation: { name: 'Product Approval', icon: 'CheckSquare' },
+                    id: 'Approving',
+                    navigation: { name: 'Products', icon: 'ShoppingCart' },
                     listProperties: ['name', 'shopId', 'isApproved', 'pointValue', 'createdAt'],
                     properties: {
                       shopId: {
@@ -333,7 +334,7 @@ const authenticate = async (email: string, password: string) => {
                                 message: `Product approved! ${product.pointValue} points set. ${approvalRequests.length} user(s) rewarded.`,
                                 type: 'success',
                               },
-                              redirectUrl: '/admin/resources/Product',
+                              redirectUrl: '/admin/resources/Approving',
                             };
                           } catch (error) {
                             return {
@@ -367,7 +368,7 @@ const authenticate = async (email: string, password: string) => {
                                 message: 'Product rejected and removed',
                                 type: 'success',
                               },
-                              redirectUrl: '/admin/resources/Product',
+                              redirectUrl: '/admin/resources/Approving',
                             };
                           } catch (error) {
                             return {
@@ -382,6 +383,38 @@ const authenticate = async (email: string, password: string) => {
                         guard: 'Are you sure you want to reject and delete this product?',
                         icon: 'XCircle',
                       },
+                    },
+                  },
+                },
+                {
+                  resource: Product,
+                  options: {
+                    id: 'Product Management',
+                    navigation: { name: 'Products', icon: 'ShoppingCart' },
+                    listProperties: ['name', 'shopId', 'isApproved', 'pointValue', 'status', 'createdAt'],
+                    properties: {
+                      shopId: {
+                        isVisible: { list: true, show: true, edit: true, filter: true },
+                      },
+                      isApproved: {
+                        isVisible: { list: true, show: true, edit: false, filter: true },
+                      },
+                      pointValue: {
+                        isVisible: { list: true, show: true, edit: true, filter: false },
+                      },
+                      status: {
+                        isVisible: { list: true, show: true, edit: true, filter: true },
+                      },
+                    },
+                    sort: {
+                      sortBy: 'createdAt',
+                      direction: 'desc',
+                    },
+                    actions: {
+                      new: { isVisible: false },
+                      edit: { isVisible: true },
+                      delete: { isVisible: true },
+                      bulkDelete: { isVisible: true },
                     },
                   },
                 },
