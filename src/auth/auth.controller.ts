@@ -69,16 +69,10 @@ export class AuthController {
   @ApiBody({ type: LoginDto })
   @ApiResponse({
     status: 200,
-    description: 'Login successful. Returns JWT token and user data.',
+    description: 'Login successful. Returns JWT token.',
     schema: {
       example: {
         access_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
-        user: {
-          id: '123e4567-e89b-12d3-a456-426614174000',
-          email: 'user@example.com',
-          name: 'John Doe',
-          points: 0,
-        },
       },
     },
   })

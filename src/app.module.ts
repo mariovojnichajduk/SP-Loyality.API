@@ -9,6 +9,7 @@ import { ShopsModule } from './shops/shops.module';
 import { ProductsModule } from './products/products.module';
 import { TransactionsModule } from './transactions/transactions.module';
 import { ApprovalRequestsModule } from './approval-requests/approval-requests.module';
+import { PointsModule } from './points/points.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { ApprovalRequestsModule } from './approval-requests/approval-requests.mo
     ProductsModule,
     TransactionsModule,
     ApprovalRequestsModule,
+    PointsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
