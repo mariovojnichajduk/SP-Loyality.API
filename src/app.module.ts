@@ -15,7 +15,7 @@ import { User, UserRole } from './users/user.entity';
 import { Shop } from './shops/shop.entity';
 import { Product } from './products/product.entity';
 import { Transaction } from './transactions/transaction.entity';
-import { ApprovalRequest } from './approval-requests/approval-request.entity';
+import { ApprovalRequest, ApprovalStatus } from './approval-requests/approval-request.entity';
 
 // Admin authentication using database users
 const authenticate = async (email: string, password: string) => {
@@ -106,7 +106,136 @@ const authenticate = async (email: string, password: string) => {
                 {
                   resource: ApprovalRequest,
                   options: {
-                    navigation: { name: 'Transactions', icon: 'Receipt' },
+                    navigation: { name: 'Approval Requests', icon: 'CheckSquare' },
+                    listProperties: ['id', 'user', 'product', 'status', 'createdAt'],
+                    filterProperties: ['status', 'userId', 'productId', 'createdAt'],
+                    sort: {
+                      sortBy: 'createdAt',
+                      direction: 'desc',
+                    },
+                    actions: {
+                      edit: { isVisible: false },
+                      delete: { isVisible: false },
+                      bulkDelete: { isVisible: false },
+                      new: { isVisible: false },
+                      list: {
+                        before: async (request) => {
+                          if (!request.query?.filters?.status) {
+                            request.query = {
+                              ...request.query,
+                              filters: {
+                                ...request.query?.filters,
+                                status: ApprovalStatus.PENDING,
+                              },
+                            };
+                          }
+                          return request;
+                        },
+                      },
+                      approve: {
+                        actionType: 'record',
+                        component: false,
+                        isVisible: (context) => {
+                          return context.record.params.status === ApprovalStatus.PENDING;
+                        },
+                        handler: async (request, response, context) => {
+                          const { record, currentAdmin } = context;
+                          const approvalRequest = await ApprovalRequest.findOne({
+                            where: { id: record.id() },
+                            relations: ['user', 'product'],
+                          });
+
+                          if (!approvalRequest) {
+                            return {
+                              record: record.toJSON(currentAdmin),
+                              notice: {
+                                message: 'Approval request not found',
+                                type: 'error',
+                              },
+                            };
+                          }
+
+                          if (approvalRequest.status !== ApprovalStatus.PENDING) {
+                            return {
+                              record: record.toJSON(currentAdmin),
+                              notice: {
+                                message: 'Only pending requests can be approved',
+                                type: 'error',
+                              },
+                            };
+                          }
+
+                          // Update status to approved
+                          approvalRequest.status = ApprovalStatus.APPROVED;
+                          await approvalRequest.save();
+
+                          // Award points to user
+                          if (approvalRequest.user && approvalRequest.product) {
+                            approvalRequest.user.points += approvalRequest.product.pointValue;
+                            await approvalRequest.user.save();
+                          }
+
+                          return {
+                            record: record.toJSON(currentAdmin),
+                            notice: {
+                              message: `Request approved! ${approvalRequest.product.pointValue} points awarded to ${approvalRequest.user.name}`,
+                              type: 'success',
+                            },
+                            redirectUrl: '/admin/resources/ApprovalRequest',
+                          };
+                        },
+                        guard: 'Are you sure you want to approve this request?',
+                        icon: 'CheckCircle',
+                      },
+                      reject: {
+                        actionType: 'record',
+                        component: false,
+                        isVisible: (context) => {
+                          return context.record.params.status === ApprovalStatus.PENDING;
+                        },
+                        handler: async (request, response, context) => {
+                          const { record, currentAdmin } = context;
+                          const approvalRequest = await ApprovalRequest.findOne({
+                            where: { id: record.id() },
+                          });
+
+                          if (!approvalRequest) {
+                            return {
+                              record: record.toJSON(currentAdmin),
+                              notice: {
+                                message: 'Approval request not found',
+                                type: 'error',
+                              },
+                            };
+                          }
+
+                          if (approvalRequest.status !== ApprovalStatus.PENDING) {
+                            return {
+                              record: record.toJSON(currentAdmin),
+                              notice: {
+                                message: 'Only pending requests can be rejected',
+                                type: 'error',
+                              },
+                            };
+                          }
+
+                          // Update status to rejected
+                          approvalRequest.status = ApprovalStatus.REJECTED;
+                          await approvalRequest.save();
+
+                          return {
+                            record: record.toJSON(currentAdmin),
+                            notice: {
+                              message: 'Request rejected',
+                              type: 'success',
+                            },
+                            redirectUrl: '/admin/resources/ApprovalRequest',
+                          };
+                        },
+                        guard: 'Are you sure you want to reject this request?',
+                        icon: 'XCircle',
+                      },
+                    },
                   },
                 },
               ],
