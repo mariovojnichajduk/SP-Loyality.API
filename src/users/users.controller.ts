@@ -3,10 +3,12 @@ import {
   Get,
   Patch,
   Delete,
+  Post,
   Body,
   UseGuards,
   Request,
   ValidationPipe,
+  Param,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -19,10 +21,12 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { UsersService } from './users.service';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { UpdateNameDto } from './dto/update-name.dto';
+import { FavoriteShopDto } from './dto/favorite-shop.dto';
 import * as bcrypt from 'bcrypt';
 import {
   UnauthorizedException,
   BadRequestException,
+  NotFoundException,
 } from '@nestjs/common';
 
 @ApiTags('user')
@@ -175,5 +179,93 @@ export class UsersController {
     return {
       message: 'Account deactivated successfully',
     };
+  }
+
+  @Get('me/favorite-shops')
+  @ApiOperation({ summary: 'Get user favorite shops' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of favorite shops',
+    schema: {
+      example: [
+        {
+          id: 'shop-uuid',
+          name: 'Shop Name',
+          location: 'Shop Location',
+          createdAt: '2025-11-05T09:00:00.000Z',
+        },
+      ],
+    },
+  })
+  async getFavoriteShops(@Request() req) {
+    const userId = req.user.userId;
+    return this.usersService.getFavoriteShops(userId);
+  }
+
+  @Post('me/favorite-shops')
+  @ApiOperation({ summary: 'Add a shop to favorites' })
+  @ApiBody({ type: FavoriteShopDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Shop added to favorites',
+    schema: {
+      example: {
+        message: 'Shop added to favorites',
+        favoriteShops: [
+          {
+            id: 'shop-uuid',
+            name: 'Shop Name',
+            location: 'Shop Location',
+          },
+        ],
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Shop already in favorites or not found',
+  })
+  async addFavoriteShop(
+    @Request() req,
+    @Body(ValidationPipe) favoriteShopDto: FavoriteShopDto,
+  ) {
+    const userId = req.user.userId;
+    try {
+      const user = await this.usersService.addFavoriteShop(
+        userId,
+        favoriteShopDto.shopId,
+      );
+      return {
+        message: 'Shop added to favorites',
+        favoriteShops: user.favoriteShops,
+      };
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
+  }
+
+  @Delete('me/favorite-shops/:shopId')
+  @ApiOperation({ summary: 'Remove a shop from favorites' })
+  @ApiResponse({
+    status: 200,
+    description: 'Shop removed from favorites',
+    schema: {
+      example: {
+        message: 'Shop removed from favorites',
+        favoriteShops: [],
+      },
+    },
+  })
+  async removeFavoriteShop(@Request() req, @Param('shopId') shopId: string) {
+    const userId = req.user.userId;
+    try {
+      const user = await this.usersService.removeFavoriteShop(userId, shopId);
+      return {
+        message: 'Shop removed from favorites',
+        favoriteShops: user.favoriteShops,
+      };
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
   }
 }
