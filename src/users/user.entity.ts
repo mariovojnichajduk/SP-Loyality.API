@@ -46,6 +46,12 @@ export class User {
   @Column({ nullable: true })
   verificationCodeExpiry: Date;
 
+  @Column({ nullable: true })
+  passwordResetCode: string;
+
+  @Column({ nullable: true })
+  passwordResetCodeExpiry: Date;
+
   @OneToMany(() => Transaction, (transaction) => transaction.user)
   transactions: Transaction[];
 

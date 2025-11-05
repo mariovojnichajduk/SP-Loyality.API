@@ -9,6 +9,9 @@ import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
+import { ResendVerificationDto } from './dto/resend-verification.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -61,6 +64,78 @@ export class AuthController {
     return this.authService.verifyEmail(
       verifyEmailDto.email,
       verifyEmailDto.code,
+    );
+  }
+
+  @Post('resend-verification')
+  @ApiOperation({ summary: 'Resend verification code to email' })
+  @ApiBody({ type: ResendVerificationDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Verification code sent successfully',
+    schema: {
+      example: {
+        message:
+          'Verification code sent successfully. Please check your email.',
+        email: 'user@example.com',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'User not found or email already verified',
+  })
+  async resendVerification(
+    @Body(ValidationPipe) resendVerificationDto: ResendVerificationDto,
+  ) {
+    return this.authService.resendVerification(resendVerificationDto.email);
+  }
+
+  @Post('forgot-password')
+  @ApiOperation({ summary: 'Request password reset code' })
+  @ApiBody({ type: ForgotPasswordDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Password reset code sent successfully',
+    schema: {
+      example: {
+        message:
+          'Password reset code sent successfully. Please check your email.',
+        email: 'user@example.com',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'User not found',
+  })
+  async forgotPassword(
+    @Body(ValidationPipe) forgotPasswordDto: ForgotPasswordDto,
+  ) {
+    return this.authService.forgotPassword(forgotPasswordDto.email);
+  }
+
+  @Post('reset-password')
+  @ApiOperation({ summary: 'Reset password with code' })
+  @ApiBody({ type: ResetPasswordDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Password reset successfully',
+    schema: {
+      example: {
+        message: 'Password reset successfully',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid reset code or code expired',
+  })
+  async resetPassword(@Body(ValidationPipe) resetPasswordDto: ResetPasswordDto) {
+    return this.authService.resetPassword(
+      resetPasswordDto.email,
+      resetPasswordDto.code,
+      resetPasswordDto.newPassword,
     );
   }
 

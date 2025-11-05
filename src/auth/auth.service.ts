@@ -77,6 +77,83 @@ export class AuthService {
     return { message: 'Email verified successfully' };
   }
 
+  async resendVerification(email: string) {
+    const user = await this.usersService.findByEmail(email);
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    if (user.isVerified) {
+      throw new BadRequestException('Email already verified');
+    }
+
+    const verificationCode = this.generateVerificationCode();
+    const verificationCodeExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    await this.usersService.update(user.id, {
+      verificationCode,
+      verificationCodeExpiry,
+    });
+
+    await this.emailService.sendVerificationEmail(email, verificationCode);
+
+    return {
+      message: 'Verification code sent successfully. Please check your email.',
+      email: user.email,
+    };
+  }
+
+  async forgotPassword(email: string) {
+    const user = await this.usersService.findByEmail(email);
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    const passwordResetCode = this.generateVerificationCode();
+    const passwordResetCodeExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    await this.usersService.update(user.id, {
+      passwordResetCode,
+      passwordResetCodeExpiry,
+    });
+
+    await this.emailService.sendPasswordResetEmail(email, passwordResetCode);
+
+    return {
+      message: 'Password reset code sent successfully. Please check your email.',
+      email: user.email,
+    };
+  }
+
+  async resetPassword(email: string, code: string, newPassword: string) {
+    const user = await this.usersService.findByEmail(email);
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    if (!user.passwordResetCode) {
+      throw new BadRequestException('No password reset request found');
+    }
+
+    if (user.passwordResetCode !== code) {
+      throw new BadRequestException('Invalid reset code');
+    }
+
+    if (new Date() > user.passwordResetCodeExpiry) {
+      throw new BadRequestException('Reset code expired');
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    await this.usersService.update(user.id, {
+      password: hashedPassword,
+      passwordResetCode: undefined,
+      passwordResetCodeExpiry: undefined,
+    });
+
+    return { message: 'Password reset successfully' };
+  }
+
   async login(loginDto: LoginDto) {
     const user = await this.usersService.findByEmail(loginDto.email);
     if (!user) {

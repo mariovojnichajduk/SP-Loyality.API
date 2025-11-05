@@ -38,4 +38,25 @@ export class EmailService {
 
     await this.transporter.sendMail(mailOptions);
   }
+
+  async sendPasswordResetEmail(email: string, code: string): Promise<void> {
+    const mailOptions = {
+      from: `${this.configService.get('MAIL_FROM_NAME')} <${this.configService.get('MAIL_FROM')}>`,
+      to: email,
+      subject: 'Password Reset - Loyalty App',
+      html: `
+        <div style="font-family: Arial, sans-serif; padding: 20px;">
+          <h2>Password Reset Request</h2>
+          <p>You requested to reset your password. Please use the following code to reset your password:</p>
+          <div style="background-color: #f0f0f0; padding: 15px; margin: 20px 0; text-align: center;">
+            <h1 style="color: #333; letter-spacing: 5px; margin: 0;">${code}</h1>
+          </div>
+          <p>This code will expire in 10 minutes.</p>
+          <p>If you didn't request this code, please ignore this email and your password will remain unchanged.</p>
+        </div>
+      `,
+    };
+
+    await this.transporter.sendMail(mailOptions);
+  }
 }
