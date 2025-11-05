@@ -108,7 +108,7 @@ const authenticate = async (email: string, password: string) => {
                   options: {
                     navigation: { name: 'Approval Requests', icon: 'CheckSquare' },
                     listProperties: ['id', 'user', 'product', 'status', 'createdAt'],
-                    filterProperties: ['status', 'userId', 'productId', 'createdAt'],
+                    filterProperties: [],
                     sort: {
                       sortBy: 'createdAt',
                       direction: 'desc',
@@ -118,6 +118,7 @@ const authenticate = async (email: string, password: string) => {
                       delete: { isVisible: false },
                       bulkDelete: { isVisible: false },
                       new: { isVisible: false },
+                      search: { isVisible: false },
                       list: {
                         before: async (request) => {
                           if (!request.query?.filters?.status) {
