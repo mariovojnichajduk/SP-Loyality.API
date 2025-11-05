@@ -2,9 +2,19 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import * as fs from 'fs';
+import * as path from 'path';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  // HTTPS Configuration
+  const httpsOptions = {
+    pfx: fs.readFileSync(path.join(__dirname, '..', 'certs', 'cert.pfx')),
+    passphrase: 'dev-password',
+  };
+
+  const app = await NestFactory.create(AppModule, {
+    httpsOptions,
+  });
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -39,8 +49,9 @@ async function bootstrap() {
   SwaggerModule.setup('api', app, document);
 
   const port = process.env.APP_PORT || 3000;
-  await app.listen(port);
-  console.log(`Application is running on: http://localhost:${port}`);
-  console.log(`Swagger documentation available at: http://localhost:${port}/api`);
+  await app.listen(port, '0.0.0.0'); // Listen on all network interfaces
+  console.log(`Application is running on: https://localhost:${port}`);
+  console.log(`Application is running on network: https://10.136.106.200:${port}`);
+  console.log(`Swagger documentation available at: https://localhost:${port}/api`);
 }
 bootstrap();
