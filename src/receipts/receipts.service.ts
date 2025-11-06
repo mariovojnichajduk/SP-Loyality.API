@@ -546,12 +546,19 @@ export class ReceiptsService {
         return sum + (product.pointValue || 0) * product.quantity;
       }, 0);
 
+      // Get shop to check for additional promotional points
+      const shop = await this.shopsService.findById(receiptData.shopId);
+      const shopAdditionalPoints = shop?.additionalPoints || 0;
+
+      // Add shop's promotional points to the total
+      const totalPointsWithPromotion = totalPoints + shopAdditionalPoints;
+
       // Create transaction (even if no points awarded yet, to track the receipt)
       const transaction = await this.transactionsService.create({
         userId,
         shopId: receiptData.shopId,
         date: receiptData.receiptDate ? new Date(receiptData.receiptDate) : new Date(),
-        points: totalPoints,
+        points: totalPointsWithPromotion,
         receiptId: receiptData.receiptId,
       });
 
@@ -603,9 +610,9 @@ export class ReceiptsService {
         );
       }
 
-      // Add points to user (only for approved products)
-      if (totalPoints > 0) {
-        await this.pointsService.addPoints(userId, totalPoints);
+      // Add points to user (approved products + shop promotional points)
+      if (totalPointsWithPromotion > 0) {
+        await this.pointsService.addPoints(userId, totalPointsWithPromotion);
 
         // Award 1 point to family members if receipt has more than 5 points
         if (totalPoints > 5) {
@@ -614,10 +621,10 @@ export class ReceiptsService {
       }
 
       return {
-        message: totalPoints > 0
+        message: totalPointsWithPromotion > 0
           ? 'Points collected successfully'
           : 'Receipt saved. Points will be awarded when products are approved.',
-        pointsAwarded: totalPoints,
+        pointsAwarded: totalPointsWithPromotion,
         transactionId: transaction.id,
       };
     } catch (error) {

@@ -64,6 +64,7 @@ export class ShopsService {
         'shop.name',
         'shop.cleanedName',
         'shop.location',
+        'shop.additionalPoints',
         'shop.createdAt',
       ])
       .addSelect('COUNT(DISTINCT transaction.id)', 'transactionCount')
@@ -72,6 +73,7 @@ export class ShopsService {
       .addGroupBy('shop.name')
       .addGroupBy('shop.cleanedName')
       .addGroupBy('shop.location')
+      .addGroupBy('shop.additionalPoints')
       .addGroupBy('shop.createdAt')
       .orderBy('COUNT(DISTINCT transaction.id)', 'DESC')
       .getRawMany();
@@ -86,12 +88,14 @@ export class ShopsService {
       location: shop.shop_location,
       transactionCount: parseInt(shop.transactionCount) || 0,
       totalPoints: parseInt(shop.totalPoints) || 0,
+      additionalPoints: parseInt(shop.shop_additionalPoints) || 0,
+      hasPromotion: (parseInt(shop.shop_additionalPoints) || 0) > 0,
       isFavorite: favoriteShopIds.includes(shop.shop_id),
       isTopPerformer: top3ShopIds.includes(shop.shop_id),
       rank: top3ShopIds.indexOf(shop.shop_id) + 1 || null,
     }));
 
-    // Sort: Favorites first, then top 3, then rest by name
+    // Sort: Favorites first, then top 3, then promotions, then rest by name
     formattedShops.sort((a, b) => {
       if (a.isFavorite && !b.isFavorite) return -1;
       if (!a.isFavorite && b.isFavorite) return 1;
@@ -100,6 +104,8 @@ export class ShopsService {
       if (a.isTopPerformer && b.isTopPerformer) {
         return (a.rank || 999) - (b.rank || 999);
       }
+      if (a.hasPromotion && !b.hasPromotion) return -1;
+      if (!a.hasPromotion && b.hasPromotion) return 1;
       return a.name.localeCompare(b.name);
     });
 

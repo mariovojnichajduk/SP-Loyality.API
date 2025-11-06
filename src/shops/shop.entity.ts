@@ -24,6 +24,9 @@ export class Shop extends BaseEntity {
   @Column()
   location: string;
 
+  @Column({ type: 'integer', default: 0 })
+  additionalPoints: number;
+
   @OneToMany(() => Product, (product) => product.shop)
   products: Product[];
 
