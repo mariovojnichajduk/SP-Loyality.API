@@ -110,10 +110,10 @@ const authenticate = async (email: string, password: string) => {
                       Product.count({ where: { isApproved: false } }),
                     ]);
 
-                    const totalPointsResult = await Transaction.createQueryBuilder(
-                      'transaction',
+                    const totalPointsResult = await Redemption.createQueryBuilder(
+                      'redemption',
                     )
-                      .select('SUM(transaction.points)', 'total')
+                      .select('SUM(redemption.pointsSpent)', 'total')
                       .getRawOne();
 
                     // Get top performing shops
@@ -680,7 +680,7 @@ const authenticate = async (email: string, password: string) => {
                 },
               ],
               branding: {
-                companyName: 'SP Loyalty Admin',
+                companyName: 'M-Star Loyalty Admin',
                 logo: false,
                 softwareBrothers: false,
               },

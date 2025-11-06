@@ -80,7 +80,7 @@ const Dashboard = () => {
 
   return (
     <Box padding="xxl" style={{ background: '#f5f5f5', minHeight: '100vh' }}>
-      <H1 marginBottom="xxl">SP Loyalty Dashboard</H1>
+      <H1 marginBottom="xxl">M-Star Loyalty Dashboard</H1>
 
       {/* Overall Statistics Cards */}
       <Box
