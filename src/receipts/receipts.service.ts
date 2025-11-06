@@ -183,6 +183,7 @@ export class ReceiptsService {
         if (!shop) {
           shop = await this.shopsService.create({
             name: rawStoreName,
+            cleanedName: storeName,
             location: shopLocation || 'Unknown',
           });
         }
@@ -465,6 +466,7 @@ export class ReceiptsService {
         if (!shop) {
           shop = await this.shopsService.create({
             name: rawStoreName,
+            cleanedName: storeName,
             location: shopLocation || 'Unknown',
           });
         }

@@ -62,6 +62,7 @@ export class ShopsService {
       .select([
         'shop.id',
         'shop.name',
+        'shop.cleanedName',
         'shop.location',
         'shop.createdAt',
       ])
@@ -69,6 +70,7 @@ export class ShopsService {
       .addSelect('COALESCE(SUM(transaction.points), 0)', 'totalPoints')
       .groupBy('shop.id')
       .addGroupBy('shop.name')
+      .addGroupBy('shop.cleanedName')
       .addGroupBy('shop.location')
       .addGroupBy('shop.createdAt')
       .orderBy('COUNT(DISTINCT transaction.id)', 'DESC')
@@ -80,7 +82,7 @@ export class ShopsService {
     // Format and sort shops
     const formattedShops = shopsWithStats.map((shop) => ({
       id: shop.shop_id,
-      name: shop.shop_name,
+      name: shop.shop_cleanedName || shop.shop_name,
       location: shop.shop_location,
       transactionCount: parseInt(shop.transactionCount) || 0,
       totalPoints: parseInt(shop.totalPoints) || 0,

@@ -18,6 +18,9 @@ export class Shop extends BaseEntity {
   @Column()
   name: string;
 
+  @Column({ nullable: true })
+  cleanedName: string;
+
   @Column()
   location: string;
 
