@@ -75,7 +75,7 @@ export class ReceiptsService {
         this.logger.warn('API endpoint failed, trying HTML scraping fallback');
       }
 
-      // Fallback to HTML scraping
+      // Fallback to HTML scraping with enhanced specification API extraction
       this.logger.log(`Fetching receipt HTML from: ${receiptUrl}`);
       const htmlResponse = await axios.get(receiptUrl, {
         headers: {
@@ -360,8 +360,164 @@ export class ReceiptsService {
     return currentProduct;
   }
 
+  private extractTokenAndInvoiceNumber(html: string): { token?: string; invoiceNumber?: string } {
+    try {
+      // Extract token from script tag: viewModel.Token('a68e336c-e307-4534-96b8-6a528ad85b75');
+      const tokenMatch = html.match(/viewModel\.Token\(['"]([^'"]+)['"]\)/);
+      const token = tokenMatch ? tokenMatch[1] : undefined;
+
+      // Extract invoice number from script tag: viewModel.InvoiceNumber('ZMVLEY2G-ZMVLEY2G-11710');
+      const invoiceNumberMatch = html.match(/viewModel\.InvoiceNumber\(['"]([^'"]+)['"]\)/);
+      const invoiceNumber = invoiceNumberMatch ? invoiceNumberMatch[1] : undefined;
+
+      return { token, invoiceNumber };
+    } catch (error) {
+      this.logger.warn('Failed to extract token and invoice number from HTML:', error);
+      return {};
+    }
+  }
+
+  private async fetchReceiptSpecification(
+    invoiceNumber: string,
+    token: string,
+  ): Promise<{ success: boolean; items?: any[] }> {
+    try {
+      this.logger.log(`Fetching receipt specification for invoice: ${invoiceNumber}`);
+
+      const response = await axios.post(
+        'https://suf.purs.gov.rs/specifications',
+        new URLSearchParams({
+          invoiceNumber,
+          token,
+        }),
+        {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Content-Type': 'application/x-www-form-urlencoded',
+            Accept: 'application/json',
+          },
+          timeout: 10000,
+        },
+      );
+
+      return response.data;
+    } catch (error) {
+      this.logger.warn('Failed to fetch receipt specification:', error);
+      return { success: false };
+    }
+  }
+
+  private async parseReceiptFromSpecification(
+    html: string,
+    items: any[],
+    invoiceNumber: string,
+  ): Promise<ProcessReceiptResponseDto> {
+    try {
+      const $ = cheerio.load(html);
+      const products: ReceiptProductDto[] = [];
+
+      // Parse items from specification API
+      // API returns items in format: { gtin, name, quantity, total, unitPrice, label, labelRate, taxBaseAmount, vatAmount }
+      for (const item of items) {
+        const product: ReceiptProductDto = {
+          product: item.name || 'Unknown Product',
+          quantity: parseFloat(item.quantity) || 1,
+        };
+
+        products.push(product);
+      }
+
+      // Extract metadata from HTML
+      const receiptText = $('body').text();
+      const lines = receiptText.split('\n');
+
+      let receiptDate: string | undefined;
+      let storeName: string | undefined;
+      let rawStoreName: string | undefined;
+      let shopLocation: string | undefined;
+
+      // Extract store name and other metadata from HTML
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+
+        if (!line) continue;
+
+        // Extract store name (formats: "1235237-287 - Maxi" or "1054272-Bomax doo")
+        if (!rawStoreName && line.match(/\d+-[A-Za-zА-Яа-я0-9\s]+/)) {
+          rawStoreName = line.trim();
+          storeName = this.extractCleanStoreName(rawStoreName);
+          shopLocation = this.extractShopLocation(lines, i);
+        }
+
+        // Extract date
+        if (!receiptDate) {
+          const extractedDate = this.extractReceiptDate(line);
+          if (extractedDate) {
+            receiptDate = extractedDate;
+          }
+        }
+      }
+
+      // Check if products exist in database
+      await this.checkProductsExistence(products);
+
+      // Look up shop by rawStoreName, create if doesn't exist
+      let shopId: string | undefined;
+      if (rawStoreName) {
+        let shop = await this.shopsService.findByName(rawStoreName);
+
+        if (!shop) {
+          shop = await this.shopsService.create({
+            name: rawStoreName,
+            cleanedName: storeName,
+            location: shopLocation || 'Unknown',
+          });
+        }
+
+        if (shop) {
+          shopId = shop.id;
+        }
+      }
+
+      return {
+        products,
+        receiptDate,
+        storeName,
+        rawStoreName,
+        shopId,
+        receiptId: invoiceNumber,
+        shopLocation,
+      };
+    } catch (error) {
+      this.logger.error('Error parsing receipt from specification:', error);
+      throw new HttpException(
+        'Failed to parse receipt specification',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
   private async parseReceiptFromHtml(html: string): Promise<ProcessReceiptResponseDto> {
     try {
+      // First, try to extract token and invoice number to fetch detailed specification
+      const { token, invoiceNumber } = this.extractTokenAndInvoiceNumber(html);
+
+      if (token && invoiceNumber) {
+        this.logger.log('Attempting to fetch receipt specification from API');
+        const specResponse = await this.fetchReceiptSpecification(invoiceNumber, token);
+
+        if (specResponse.success && specResponse.items && specResponse.items.length > 0) {
+          this.logger.log(`Successfully fetched ${specResponse.items.length} items from specification API`);
+          // Parse using the specification API data
+          return this.parseReceiptFromSpecification(html, specResponse.items, invoiceNumber);
+        } else {
+          this.logger.warn('Specification API returned no items, falling back to HTML parsing');
+        }
+      } else {
+        this.logger.warn('Could not extract token/invoice number, falling back to HTML parsing');
+      }
+
+      // Fallback to original HTML parsing method
       const $ = cheerio.load(html);
       const products: ReceiptProductDto[] = [];
       let receiptDate: string | undefined;
