@@ -23,6 +23,34 @@ export class AuthService {
     return Math.floor(100000 + Math.random() * 900000).toString();
   }
 
+  private generateInvitationCode(): string {
+    // Generate a 8-character alphanumeric code (uppercase letters and numbers)
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let code = '';
+    for (let i = 0; i < 8; i++) {
+      code += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+    return code;
+  }
+
+  private async generateUniqueInvitationCode(): Promise<string> {
+    let code: string;
+    let isUnique = false;
+
+    // Keep generating until we get a unique code
+    while (!isUnique) {
+      code = this.generateInvitationCode();
+      const existingUser = await this.usersService.findByInvitationCode(code);
+      if (!existingUser) {
+        isUnique = true;
+        return code;
+      }
+    }
+
+    // This should never be reached, but TypeScript requires it
+    return this.generateInvitationCode();
+  }
+
   async register(registerDto: RegisterDto) {
     const existingUser = await this.usersService.findByEmail(registerDto.email);
     if (existingUser) {
@@ -32,6 +60,7 @@ export class AuthService {
     const hashedPassword = await bcrypt.hash(registerDto.password, 10);
     const verificationCode = this.generateVerificationCode();
     const verificationCodeExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    const invitationCode = await this.generateUniqueInvitationCode();
 
     const user = await this.usersService.create({
       email: registerDto.email,
@@ -39,6 +68,7 @@ export class AuthService {
       password: hashedPassword,
       verificationCode,
       verificationCodeExpiry,
+      invitationCode,
       isVerified: false,
     });
 

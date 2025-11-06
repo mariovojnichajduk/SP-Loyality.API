@@ -24,6 +24,10 @@ export class UsersService {
     });
   }
 
+  async findByInvitationCode(invitationCode: string): Promise<User | null> {
+    return this.usersRepository.findOne({ where: { invitationCode } });
+  }
+
   async create(userData: Partial<User>): Promise<User> {
     const user = this.usersRepository.create(userData);
     return this.usersRepository.save(user);
@@ -116,5 +120,45 @@ export class UsersService {
     await this.usersRepository.save(user);
 
     return user;
+  }
+
+  private generateInvitationCode(): string {
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let code = '';
+    for (let i = 0; i < 8; i++) {
+      code += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+    return code;
+  }
+
+  async generateUniqueInvitationCode(): Promise<string> {
+    let code: string;
+    let isUnique = false;
+
+    while (!isUnique) {
+      code = this.generateInvitationCode();
+      const existingUser = await this.findByInvitationCode(code);
+      if (!existingUser) {
+        isUnique = true;
+        return code;
+      }
+    }
+
+    return this.generateInvitationCode();
+  }
+
+  async updateUsersWithoutInvitationCodes(): Promise<{ updated: number }> {
+    const usersWithoutCodes = await this.usersRepository.find({
+      where: { invitationCode: null } as any,
+    });
+
+    let updated = 0;
+    for (const user of usersWithoutCodes) {
+      const invitationCode = await this.generateUniqueInvitationCode();
+      await this.usersRepository.update(user.id, { invitationCode });
+      updated++;
+    }
+
+    return { updated };
   }
 }

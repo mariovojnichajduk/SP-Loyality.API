@@ -268,4 +268,24 @@ export class UsersController {
       throw new BadRequestException(error.message);
     }
   }
+
+  @Post('update-invitation-codes')
+  @ApiOperation({ summary: 'Update users without invitation codes (Admin only)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Invitation codes updated',
+    schema: {
+      example: {
+        message: 'Updated invitation codes for users',
+        updated: 5,
+      },
+    },
+  })
+  async updateInvitationCodes() {
+    const result = await this.usersService.updateUsersWithoutInvitationCodes();
+    return {
+      message: 'Updated invitation codes for users',
+      updated: result.updated,
+    };
+  }
 }
