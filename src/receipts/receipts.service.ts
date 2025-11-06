@@ -1,4 +1,6 @@
 import { Injectable, HttpException, HttpStatus, Logger, Inject, forwardRef } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { ProcessReceiptDto } from './dto/process-receipt.dto';
@@ -11,6 +13,7 @@ import { ShopsService } from '../shops/shops.service';
 import { TransactionsService } from '../transactions/transactions.service';
 import { PointsService } from '../points/points.service';
 import { Product } from '../products/product.entity';
+import { User } from '../users/user.entity';
 
 @Injectable()
 export class ReceiptsService {
@@ -22,6 +25,8 @@ export class ReceiptsService {
     private readonly shopsService: ShopsService,
     private readonly transactionsService: TransactionsService,
     private readonly pointsService: PointsService,
+    @InjectRepository(User)
+    private readonly usersRepository: Repository<User>,
   ) {}
 
   async processReceipt(
@@ -601,6 +606,11 @@ export class ReceiptsService {
       // Add points to user (only for approved products)
       if (totalPoints > 0) {
         await this.pointsService.addPoints(userId, totalPoints);
+
+        // Award 1 point to family members if receipt has more than 5 points
+        if (totalPoints > 5) {
+          await this.awardFamilyMemberPoints(userId);
+        }
       }
 
       return {
@@ -690,6 +700,32 @@ export class ReceiptsService {
         'An error occurred while awarding pending points',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
+    }
+  }
+
+  private async awardFamilyMemberPoints(userId: string): Promise<void> {
+    try {
+      // Get user with family members
+      const user = await this.usersRepository.findOne({
+        where: { id: userId },
+        relations: ['familyMembers'],
+      });
+
+      if (!user || !user.familyMembers || user.familyMembers.length === 0) {
+        return;
+      }
+
+      // Award 1 point to each family member
+      for (const familyMember of user.familyMembers) {
+        await this.pointsService.addPoints(familyMember.id, 1);
+      }
+
+      this.logger.log(
+        `Awarded 1 point each to ${user.familyMembers.length} family members of user ${userId}`,
+      );
+    } catch (error) {
+      this.logger.error('Error awarding family member points:', error);
+      // Don't throw error - family member points are a bonus feature
     }
   }
 }

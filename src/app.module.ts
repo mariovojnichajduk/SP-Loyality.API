@@ -18,6 +18,7 @@ import { ProductApprovalRequest } from './products/product-approval-request.enti
 import { StatisticsModule } from './statistics/statistics.module';
 import { ReceiptsModule } from './receipts/receipts.module';
 import { RewardsModule } from './rewards/rewards.module';
+import { FamilyModule } from './family/family.module';
 import { Reward } from './rewards/reward.entity';
 import { Redemption } from './rewards/redemption.entity';
 
@@ -707,6 +708,7 @@ const authenticate = async (email: string, password: string) => {
     StatisticsModule,
     ReceiptsModule,
     RewardsModule,
+    FamilyModule,
   ],
   controllers: [AppController],
   providers: [AppService],

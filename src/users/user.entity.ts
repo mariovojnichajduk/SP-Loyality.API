@@ -66,6 +66,17 @@ export class User extends BaseEntity {
   @Column({ nullable: true })
   passwordResetCodeExpiry: Date;
 
+  @Column({ unique: true, nullable: true })
+  invitationCode: string;
+
+  @ManyToMany(() => User, (user) => user.familyMembers)
+  @JoinTable({
+    name: 'family_members',
+    joinColumn: { name: 'userId', referencedColumnName: 'id' },
+    inverseJoinColumn: { name: 'familyMemberId', referencedColumnName: 'id' },
+  })
+  familyMembers: User[];
+
   @OneToMany(() => Transaction, (transaction) => transaction.user)
   transactions: Transaction[];
 
