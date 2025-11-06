@@ -17,6 +17,9 @@ import { Transaction } from './transactions/transaction.entity';
 import { ProductApprovalRequest } from './products/product-approval-request.entity';
 import { StatisticsModule } from './statistics/statistics.module';
 import { ReceiptsModule } from './receipts/receipts.module';
+import { RewardsModule } from './rewards/rewards.module';
+import { Reward } from './rewards/reward.entity';
+import { Redemption } from './rewards/redemption.entity';
 
 // Admin authentication using database users
 const authenticate = async (email: string, password: string) => {
@@ -465,6 +468,119 @@ const authenticate = async (email: string, password: string) => {
                     navigation: { name: 'Transactions', icon: 'CreditCard' },
                   },
                 },
+                {
+                  resource: Reward,
+                  options: {
+                    navigation: { name: 'Rewards & Redemptions', icon: 'Gift' },
+                    listProperties: ['name', 'pointsCost', 'stock', 'status', 'createdAt'],
+                    properties: {
+                      name: {
+                        isVisible: { list: true, show: true, edit: true, filter: true },
+                      },
+                      description: {
+                        isVisible: { list: false, show: true, edit: true, filter: false },
+                        type: 'textarea',
+                      },
+                      pointsCost: {
+                        isVisible: { list: true, show: true, edit: true, filter: false },
+                      },
+                      stock: {
+                        isVisible: { list: true, show: true, edit: true, filter: false },
+                      },
+                      imageUrl: {
+                        isVisible: { list: false, show: true, edit: true, filter: false },
+                      },
+                      status: {
+                        isVisible: { list: true, show: true, edit: true, filter: true },
+                      },
+                    },
+                    sort: {
+                      sortBy: 'createdAt',
+                      direction: 'desc',
+                    },
+                    actions: {
+                      new: { isVisible: true },
+                      edit: { isVisible: true },
+                      delete: { isVisible: true },
+                      bulkDelete: { isVisible: true },
+                    },
+                  },
+                },
+                {
+                  resource: Redemption,
+                  options: {
+                    navigation: { name: 'Rewards & Redemptions', icon: 'Gift' },
+                    listProperties: ['id', 'userId', 'rewardId', 'pointsSpent', 'status', 'createdAt'],
+                    properties: {
+                      userId: {
+                        isVisible: { list: true, show: true, edit: false, filter: true },
+                      },
+                      rewardId: {
+                        isVisible: { list: true, show: true, edit: false, filter: true },
+                      },
+                      pointsSpent: {
+                        isVisible: { list: true, show: true, edit: false, filter: false },
+                      },
+                      status: {
+                        isVisible: { list: true, show: true, edit: true, filter: true },
+                        availableValues: [
+                          { value: 'pending', label: 'Pending' },
+                          { value: 'completed', label: 'Completed' },
+                          { value: 'cancelled', label: 'Cancelled' },
+                        ],
+                      },
+                    },
+                    sort: {
+                      sortBy: 'createdAt',
+                      direction: 'desc',
+                    },
+                    actions: {
+                      new: { isVisible: false },
+                      edit: {
+                        isVisible: true,
+                        after: async (response, request, context) => {
+                          // After editing redemption status, handle refund if cancelled
+                          const { record, currentAdmin } = context;
+                          const newStatus = request.payload?.status;
+                          const redemptionId = record.id();
+
+                          if (newStatus === 'cancelled') {
+                            const entityManager = Redemption.getRepository().manager;
+
+                            // Get redemption details
+                            const redemption = await entityManager.findOne(Redemption, {
+                              where: { id: redemptionId },
+                            });
+
+                            if (redemption) {
+                              // Refund points to user
+                              await entityManager.query(
+                                `UPDATE users SET points = points + $1 WHERE id = $2`,
+                                [redemption.pointsSpent, redemption.userId]
+                              );
+
+                              // Restore stock
+                              const reward = await entityManager.findOne(Reward, {
+                                where: { id: redemption.rewardId },
+                              });
+
+                              if (reward && reward.stock !== null) {
+                                await entityManager.query(
+                                  `UPDATE rewards SET stock = stock + 1, status = 'active' WHERE id = $1`,
+                                  [redemption.rewardId]
+                                );
+                              }
+                            }
+                          }
+
+                          return response;
+                        },
+                      },
+                      delete: { isVisible: false },
+                      bulkDelete: { isVisible: false },
+                    },
+                  },
+                },
               ],
               branding: {
                 companyName: 'SP Loyalty Admin',
@@ -494,6 +610,7 @@ const authenticate = async (email: string, password: string) => {
     PointsModule,
     StatisticsModule,
     ReceiptsModule,
+    RewardsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

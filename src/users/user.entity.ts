@@ -12,6 +12,7 @@ import {
 import { Transaction } from '../transactions/transaction.entity';
 import { ApprovalRequest } from '../approval-requests/approval-request.entity';
 import { Shop } from '../shops/shop.entity';
+import { Redemption } from '../rewards/redemption.entity';
 
 export enum UserRole {
   USER = 'user',
@@ -70,6 +71,9 @@ export class User extends BaseEntity {
 
   @OneToMany(() => ApprovalRequest, (approvalRequest) => approvalRequest.user)
   approvalRequests: ApprovalRequest[];
+
+  @OneToMany(() => Redemption, (redemption) => redemption.user)
+  redemptions: Redemption[];
 
   @CreateDateColumn()
   createdAt: Date;
