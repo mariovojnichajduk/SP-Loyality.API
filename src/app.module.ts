@@ -141,6 +141,7 @@ const authenticate = async (email: string, password: string) => {
                       last7DaysCount,
                       last30DaysCount,
                       mostRequestedProducts,
+                      mostRedeemedRewards,
                     ] = await Promise.all([
                       Product.count({ where: { isApproved: true } }),
                       ProductApprovalRequest.createQueryBuilder('request')
@@ -159,7 +160,98 @@ const authenticate = async (email: string, password: string) => {
                         .orderBy('COUNT(request.id)', 'DESC')
                         .limit(10)
                         .getRawMany(),
+                      Redemption.createQueryBuilder('redemption')
+                        .leftJoin('redemption.reward', 'reward')
+                        .select('reward.id', 'rewardId')
+                        .addSelect('reward.name', 'rewardName')
+                        .addSelect('COUNT(redemption.id)', 'redemptionCount')
+                        .addSelect('SUM(redemption.pointsSpent)', 'totalPointsSpent')
+                        .groupBy('reward.id')
+                        .addGroupBy('reward.name')
+                        .orderBy('COUNT(redemption.id)', 'DESC')
+                        .limit(10)
+                        .getRawMany(),
                     ]);
+
+                    // Get daily stats for the last 14 days for chart (simplified for performance)
+                    const dailyStats: Array<{ date: string; approved: number; pending: number }> = [];
+                    const now = new Date();
+                    for (let i = 13; i >= 0; i--) {
+                      const date = new Date(now);
+                      date.setDate(date.getDate() - i);
+                      date.setHours(0, 0, 0, 0);
+
+                      const formattedDate = date.toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                      });
+
+                      dailyStats.push({
+                        date: formattedDate,
+                        approved: 0,
+                        pending: 0,
+                      });
+                    }
+                    console.log('Created dailyStats:', dailyStats.map(d => d.date));
+
+                    // Get aggregated data from last 14 days
+                    const fourteenDaysAgo = new Date();
+                    fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+
+                    const approvedByDay = await Product.createQueryBuilder('product')
+                      .select("DATE(product.createdAt)", 'date')
+                      .addSelect('COUNT(*)', 'count')
+                      .where('product.isApproved = true AND product.createdAt >= :date', {
+                        date: fourteenDaysAgo,
+                      })
+                      .groupBy('DATE(product.createdAt)')
+                      .getRawMany();
+
+                    const pendingByDay = await ProductApprovalRequest.createQueryBuilder('request')
+                      .select("DATE(request.createdAt)", 'date')
+                      .addSelect('COUNT(*)', 'count')
+                      .where('request.createdAt >= :date', { date: fourteenDaysAgo })
+                      .groupBy('DATE(request.createdAt)')
+                      .getRawMany();
+
+                    console.log('Approved by day:', approvedByDay);
+                    console.log('Pending by day:', pendingByDay);
+
+                    // Map the data to dailyStats
+                    approvedByDay.forEach((row: any) => {
+                      // Parse the date string and convert to local date
+                      const dateStr = typeof row.date === 'string' ? row.date : row.date.toISOString();
+                      const dateObj = new Date(dateStr);
+                      const formattedDate = dateObj.toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                      });
+                      console.log(`Looking for approved date: ${formattedDate} from ${dateStr}`);
+                      const stat = dailyStats.find((s) => s.date === formattedDate);
+                      if (stat) {
+                        stat.approved = parseInt(row.count);
+                        console.log(`Found match! Set approved to ${row.count}`);
+                      } else {
+                        console.log(`No match found in dailyStats for ${formattedDate}`);
+                      }
+                    });
+
+                    pendingByDay.forEach((row: any) => {
+                      const dateStr = typeof row.date === 'string' ? row.date : row.date.toISOString();
+                      const dateObj = new Date(dateStr);
+                      const formattedDate = dateObj.toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                      });
+                      console.log(`Looking for pending date: ${formattedDate} from ${dateStr}`);
+                      const stat = dailyStats.find((s) => s.date === formattedDate);
+                      if (stat) {
+                        stat.pending = parseInt(row.count);
+                        console.log(`Found match! Set pending to ${row.count}`);
+                      } else {
+                        console.log(`No match found in dailyStats for ${formattedDate}`);
+                      }
+                    });
 
                     const result = {
                       overview: {
@@ -171,14 +263,16 @@ const authenticate = async (email: string, password: string) => {
                         totalPointsUsed: totalPointsResult?.total || 0,
                       },
                       topShops,
+                      mostRedeemedRewards,
                       approvalStats: {
                         summary: {
-                          unapprovedProducts,
+                          totalPending: unapprovedProducts,
                           totalApproved,
                           last7Days: last7DaysCount,
                           last30Days: last30DaysCount,
                         },
                         mostRequestedProducts,
+                        dailyStats,
                       },
                     };
                     console.log('Dashboard handler returning data:', result);
@@ -195,14 +289,16 @@ const authenticate = async (email: string, password: string) => {
                         totalPointsUsed: 0,
                       },
                       topShops: [],
+                      mostRedeemedRewards: [],
                       approvalStats: {
                         summary: {
-                          unapprovedProducts: 0,
+                          totalPending: 0,
                           totalApproved: 0,
                           last7Days: 0,
                           last30Days: 0,
                         },
                         mostRequestedProducts: [],
+                        dailyStats: [],
                       },
                     };
                   }
