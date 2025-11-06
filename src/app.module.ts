@@ -221,7 +221,7 @@ const authenticate = async (email: string, password: string) => {
                 {
                   resource: Shop,
                   options: {
-                    navigation: { name: 'Shop Management', icon: 'Store' },
+                    navigation: { name: 'Shop Management', icon: 'Home' },
                   },
                 },
                 {
@@ -403,8 +403,9 @@ const authenticate = async (email: string, password: string) => {
                           const productId = record.id();
 
                           try {
-                            await Product.delete(productId);
+                            // Delete approval requests first to avoid foreign key constraint violation
                             await ProductApprovalRequest.delete({ productId });
+                            await Product.delete(productId);
 
                             return {
                               record: record.toJSON(currentAdmin),
@@ -465,7 +466,7 @@ const authenticate = async (email: string, password: string) => {
                 {
                   resource: Transaction,
                   options: {
-                    navigation: { name: 'Transactions', icon: 'Receipt' },
+                    navigation: { name: 'Transactions', icon: 'CreditCard' },
                   },
                 },
               ],
