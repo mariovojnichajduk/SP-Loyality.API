@@ -735,19 +735,27 @@ const Dashboard = () => {
         )}
       </Box>
 
-      {/* Most Collected Gifts */}
+      {/* Most Collected Gifts Section */}
       {mostRedeemedRewards.length > 0 && (
         <Box
-          padding="lg"
-          marginBottom="lg"
           style={{
-            background: 'white',
-            borderRadius: '8px',
-            border: '1px solid #e0e0e0',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
+            gap: '20px',
+            marginBottom: '30px',
           }}
         >
-          <H2 marginBottom="lg">Most Collected Gifts</H2>
+          {/* Most Collected Gifts Table */}
+          <Box
+            padding="lg"
+            style={{
+              background: 'white',
+              borderRadius: '8px',
+              border: '1px solid #e0e0e0',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+            }}
+          >
+            <H2 marginBottom="lg">Most Collected Gifts</H2>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '2px solid #dee2e6', background: '#f8f9fa' }}>
@@ -818,6 +826,105 @@ const Dashboard = () => {
               ))}
             </tbody>
           </table>
+          </Box>
+
+          {/* Redemptions Chart */}
+          <Box
+            padding="lg"
+            style={{
+              background: 'white',
+              borderRadius: '8px',
+              border: '1px solid #e0e0e0',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+            }}
+          >
+            <H2 marginBottom="md">Redemption Distribution</H2>
+            <Box style={{ marginTop: '30px' }}>
+              {mostRedeemedRewards.slice(0, 5).map((reward, index) => {
+                const maxRedemptions = Math.max(
+                  ...mostRedeemedRewards.slice(0, 5).map((r) => parseInt(r.redemptionCount) || 0),
+                  1,
+                );
+                const barWidth =
+                  ((parseInt(reward.redemptionCount) || 0) / maxRedemptions) * 100;
+
+                return (
+                  <Box key={reward.rewardId || index} style={{ marginBottom: '20px' }}>
+                    <Box
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        marginBottom: '8px',
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontWeight: '600',
+                          color: '#495057',
+                          fontSize: '14px',
+                          maxWidth: '60%',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                        title={reward.rewardName}
+                      >
+                        {reward.rewardName}
+                      </Text>
+                      <Text style={{ fontWeight: '600', color: '#6f42c1', fontSize: '14px' }}>
+                        {reward.redemptionCount} redemptions
+                      </Text>
+                    </Box>
+                    <Box
+                      style={{
+                        width: '100%',
+                        height: '30px',
+                        background: '#f8f9fa',
+                        borderRadius: '8px',
+                        overflow: 'hidden',
+                        position: 'relative',
+                      }}
+                    >
+                      <Box
+                        style={{
+                          width: `${barWidth}%`,
+                          height: '100%',
+                          background: 'linear-gradient(90deg, #6f42c1 0%, #9b59b6 100%)',
+                          transition: 'width 1s ease',
+                          display: 'flex',
+                          alignItems: 'center',
+                          paddingLeft: '10px',
+                        }}
+                      >
+                        <Text style={{ color: 'white', fontSize: '12px', fontWeight: 'bold' }}>
+                          {reward.totalPointsSpent} pts
+                        </Text>
+                      </Box>
+                    </Box>
+                  </Box>
+                );
+              })}
+
+              {/* Summary */}
+              <Box
+                style={{
+                  marginTop: '30px',
+                  padding: '15px',
+                  background: '#f8f9fa',
+                  borderRadius: '8px',
+                  textAlign: 'center',
+                }}
+              >
+                <Text style={{ fontSize: '14px', color: '#666' }}>Total Redemptions</Text>
+                <Text style={{ fontSize: '32px', fontWeight: 'bold', color: '#6f42c1' }}>
+                  {mostRedeemedRewards.reduce(
+                    (sum, r) => sum + (parseInt(r.redemptionCount) || 0),
+                    0,
+                  )}
+                </Text>
+              </Box>
+            </Box>
+          </Box>
         </Box>
       )}
     </Box>
