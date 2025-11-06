@@ -313,19 +313,15 @@ const authenticate = async (email: string, password: string) => {
                             }
                             await product.save();
 
-                            // Find and reward users who requested this product (old system)
+                            // Mark old approval requests as rewarded (for tracking purposes only)
+                            // Note: Points are now awarded through the TransactionProduct system
                             const approvalRequests = await ProductApprovalRequest.find({
                               where: { productId, isRewarded: false },
-                              relations: ['user'],
                             });
 
                             for (const req of approvalRequests) {
-                              if (req.user) {
-                                req.user.points = (req.user.points || 0) + product.pointValue;
-                                await req.user.save();
-                                req.isRewarded = true;
-                                await req.save();
-                              }
+                              req.isRewarded = true;
+                              await req.save();
                             }
 
                             // Award pending points from receipts using entity manager

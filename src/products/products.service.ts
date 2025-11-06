@@ -156,15 +156,13 @@ export class ProductsService {
       throw new Error('Product not found');
     }
 
-    // Find all users who requested this product (old system)
+    // Mark old approval requests as rewarded (for tracking purposes only)
+    // Note: Points are now awarded through the TransactionProduct system
     const approvalRequests = await this.approvalRequestsRepository.find({
       where: { productId, isRewarded: false },
-      relations: ['user'],
     });
 
-    // Reward users with points and mark requests as rewarded (old system)
     for (const request of approvalRequests) {
-      await this.usersService.addPoints(request.userId, pointValue);
       request.isRewarded = true;
       await this.approvalRequestsRepository.save(request);
     }
@@ -174,7 +172,7 @@ export class ProductsService {
 
     return {
       product,
-      rewardedUsers: approvalRequests.length + pendingPointsResult.usersAwarded,
+      rewardedUsers: pendingPointsResult.usersAwarded,
       pendingPointsAwarded: pendingPointsResult.totalPointsAwarded,
     };
   }

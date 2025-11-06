@@ -134,21 +134,9 @@ export class ApprovalRequestsController {
       );
     }
 
-    // If approved, add points to user
-    if (updateDto.status === ApprovalStatus.APPROVED) {
-      const requestUser = await this.usersRepository.findOne({
-        where: { id: approvalRequest.userId },
-      });
-
-      const product = await this.productsRepository.findOne({
-        where: { id: approvalRequest.productId },
-      });
-
-      if (requestUser && product) {
-        requestUser.points += product.pointValue;
-        await this.usersRepository.save(requestUser);
-      }
-    }
+    // Note: This approval system is unused. Points are awarded through the TransactionProduct system.
+    // If this endpoint is ever used in the future, points should be awarded via receipts/transactions,
+    // not directly here.
 
     return this.approvalRequestsService.updateStatus(
       id,

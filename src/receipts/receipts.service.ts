@@ -521,13 +521,17 @@ export class ReceiptsService {
         );
       }
 
-      // Separate approved and unapproved products
+      // Separate products by existence and approval status
       const approvedProducts = receiptData.products.filter(
         (p) => p.doesExist && (p.pointValue || 0) > 0,
       );
 
-      const unapprovedProducts = receiptData.products.filter(
+      const existingUnapprovedProducts = receiptData.products.filter(
         (p) => p.doesExist && (p.pointValue || 0) === 0,
+      );
+
+      const newProducts = receiptData.products.filter(
+        (p) => !p.doesExist,
       );
 
       // Calculate total points from approved products only
@@ -558,8 +562,8 @@ export class ReceiptsService {
         }
       }
 
-      // Create transaction-product records for unapproved products (points NOT awarded yet)
-      for (const product of unapprovedProducts) {
+      // Create transaction-product records for existing unapproved products (points NOT awarded yet)
+      for (const product of existingUnapprovedProducts) {
         const productEntity = await this.productsService.findByName(product.product);
         if (productEntity) {
           await this.transactionsService.createTransactionProduct(
@@ -570,6 +574,26 @@ export class ReceiptsService {
             false, // Points not awarded
           );
         }
+      }
+
+      // Create new products and transaction-product records for products that don't exist yet
+      for (const product of newProducts) {
+        // Create the product with isApproved: false and request approval
+        const productEntity = await this.productsService.requestProductApproval(
+          userId,
+          product.product,
+          receiptData.shopId,
+          receiptData.rawStoreName,
+        );
+
+        // Create transaction-product record for this new product
+        await this.transactionsService.createTransactionProduct(
+          transaction.id,
+          productEntity.id,
+          product.quantity,
+          0, // No points yet (unapproved)
+          false, // Points not awarded
+        );
       }
 
       // Add points to user (only for approved products)
