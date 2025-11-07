@@ -599,7 +599,7 @@ const Dashboard = () => {
                   Transactions
                 </th>
                 <th style={{ padding: '12px', textAlign: 'right', color: '#495057' }}>
-                  Points Used
+                  Points Given
                 </th>
               </tr>
             </thead>
