@@ -680,7 +680,7 @@ const authenticate = async (email: string, password: string) => {
                 },
               ],
               branding: {
-                companyName: 'M-Star Loyalty Admin',
+                companyName: 'Loyality Program Admin',
                 logo: false,
                 softwareBrothers: false,
               },
