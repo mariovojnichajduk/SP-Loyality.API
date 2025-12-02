@@ -3,7 +3,8 @@
     "allow": [
       "Bash(dir:*)",
       "Bash(ipconfig:*)",
-      "Bash(findstr:*)"
+      "Bash(findstr:*)",
+      "Bash(PGPASSWORD=studiopresent psql:*)"
     ],
     "deny": [],
     "ask": []

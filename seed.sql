@@ -63,13 +63,13 @@ INSERT INTO rewards (id, name, description, "pointsCost", stock, "imageUrl", sta
 ('a7108c3f-d8d9-4212-9080-66abcaa96167', 'Honor 400 Pro', 'Uzivajte u novom telefonu vrhunskog proizvodjaca', 345, 3, 'https://i.ibb.co/spWFSNh0/a0192e54e51c.jpg', 'active', NOW(), NOW()),
 ('33d50b13-b1ba-45ea-b136-c25f03687151', 'Letovanje Maldivi', 'Letovanje za 2 osoba na jednoj od najatraktivnijih destinacija', 650, 2, 'https://i.ibb.co/3yP45Fgj/image.png', 'active', NOW(), NOW()),
 -- New rewards
-('aaaa1111-1111-1111-1111-111111111111', 'Cinema Ticket', 'Ulaznica za bioskop - bilo koji film', 8, 100, 'https://i.ibb.co/placeholder/cinema.jpg', 'active', NOW(), NOW()),
-('bbbb2222-2222-2222-2222-222222222222', 'Gym Day Pass', 'Dnevna karta za fitnes centar', 12, 50, 'https://i.ibb.co/placeholder/gym.jpg', 'active', NOW(), NOW()),
-('cccc3333-3333-3333-3333-333333333333', 'Spotify Premium 1 Month', 'Mesec dana Spotify Premium', 25, 20, 'https://i.ibb.co/placeholder/spotify.jpg', 'active', NOW(), NOW()),
-('dddd4444-4444-4444-4444-444444444444', 'Restaurant Voucher 1000 RSD', 'Vaucer za restoran u vrednosti 1000 dinara', 35, 25, 'https://i.ibb.co/placeholder/restaurant.jpg', 'active', NOW(), NOW()),
-('eeee5555-5555-5555-5555-555555555555', 'Wireless Earbuds', 'Bezicne slusalice visokog kvaliteta', 85, 10, 'https://i.ibb.co/placeholder/earbuds.jpg', 'active', NOW(), NOW()),
-('ffff6666-6666-6666-6666-666666666666', 'Weekend Spa Package', 'Vikend wellness paket za dvoje', 150, 5, 'https://i.ibb.co/placeholder/spa.jpg', 'active', NOW(), NOW()),
-('gggg7777-7777-7777-7777-777777777777', 'E-Book Reader', 'Kindle Paperwhite e-citac', 120, 8, 'https://i.ibb.co/placeholder/kindle.jpg', 'active', NOW(), NOW());
+('aaaa1111-1111-1111-1111-111111111111', 'Cinema Ticket', 'Ulaznica za bioskop - bilo koji film', 8, 100, 'https://i.ibb.co/JWJDqwhH/image.png', 'active', NOW(), NOW()),
+('bbbb2222-2222-2222-2222-222222222222', 'Gym Day Pass', 'Dnevna karta za fitnes centar', 12, 50, 'https://i.ibb.co/YFfbQMXs/image.png', 'active', NOW(), NOW()),
+('cccc3333-3333-3333-3333-333333333333', 'Spotify Premium 1 Month', 'Mesec dana Spotify Premium', 25, 20, 'https://i.ibb.co/b5NZ7wrr/image.png', 'active', NOW(), NOW()),
+('dddd4444-4444-4444-4444-444444444444', 'Restaurant Voucher 1000 RSD', 'Vaucer za restoran u vrednosti 1000 dinara', 35, 25, 'https://i.ibb.co/hFp4TPHV/image.png', 'active', NOW(), NOW()),
+('eeee5555-5555-5555-5555-555555555555', 'Wireless Earbuds', 'Bezicne slusalice visokog kvaliteta', 85, 10, 'https://i.ibb.co/YBJGdxpk/image.png', 'active', NOW(), NOW()),
+('ffff6666-6666-6666-6666-666666666666', 'Weekend Spa Package', 'Vikend wellness paket za dvoje', 150, 5, 'https://i.ibb.co/4ZDvxh76/image.png', 'active', NOW(), NOW()),
+('a7a77777-7777-7777-7777-777777777777', 'E-Book Reader', 'Kindle Paperwhite e-citac', 120, 8, 'https://i.ibb.co/BVNc6g2s/image.png', 'active', NOW(), NOW());
 
 -- =============================================
 -- PRODUCTS (mix of approved and pending)
@@ -105,88 +105,88 @@ INSERT INTO products (id, name, "pointValue", "isApproved", status, "shopId", "c
 -- Madame Coco products
 ('56e35f05-6d3c-4634-a25e-be5f5f2a5527', '1KHALI1905: TEPIH', 5, true, 'available', '613f7381-3b51-45ae-a3b2-7e657549c78e', NOW(), NOW()),
 -- New Idea products
-('p1111111-1111-1111-1111-111111111111', 'Mleko Imlek 1L', 1, true, 'available', '11111111-1111-1111-1111-111111111111', NOW(), NOW()),
-('p2222222-2222-2222-2222-222222222222', 'Jogurt Balans+ 1kg', 2, true, 'available', '11111111-1111-1111-1111-111111111111', NOW(), NOW()),
-('p3333333-3333-3333-3333-333333333333', 'Hleb Integral 500g', 1, true, 'available', '11111111-1111-1111-1111-111111111111', NOW(), NOW()),
-('p4444444-4444-4444-4444-444444444444', 'Jaja M 10 kom', 2, true, 'available', '11111111-1111-1111-1111-111111111111', NOW(), NOW()),
+('b1111111-1111-1111-1111-111111111111', 'Mleko Imlek 1L', 1, true, 'available', '11111111-1111-1111-1111-111111111111', NOW(), NOW()),
+('b2222222-2222-2222-2222-222222222222', 'Jogurt Balans+ 1kg', 2, true, 'available', '11111111-1111-1111-1111-111111111111', NOW(), NOW()),
+('b3333333-3333-3333-3333-333333333333', 'Hleb Integral 500g', 1, true, 'available', '11111111-1111-1111-1111-111111111111', NOW(), NOW()),
+('b4444444-4444-4444-4444-444444444444', 'Jaja M 10 kom', 2, true, 'available', '11111111-1111-1111-1111-111111111111', NOW(), NOW()),
 -- Lidl products
-('p5555555-5555-5555-5555-555555555555', 'Piletina file 1kg', 3, true, 'available', '22222222-2222-2222-2222-222222222222', NOW(), NOW()),
-('p6666666-6666-6666-6666-666666666666', 'Cokolada Fin Carre 100g', 1, true, 'available', '22222222-2222-2222-2222-222222222222', NOW(), NOW()),
-('p7777777-7777-7777-7777-777777777777', 'Banana 1kg', 1, true, 'available', '22222222-2222-2222-2222-222222222222', NOW(), NOW()),
+('b5555555-5555-5555-5555-555555555555', 'Piletina file 1kg', 3, true, 'available', '22222222-2222-2222-2222-222222222222', NOW(), NOW()),
+('b6666666-6666-6666-6666-666666666666', 'Cokolada Fin Carre 100g', 1, true, 'available', '22222222-2222-2222-2222-222222222222', NOW(), NOW()),
+('b7777777-7777-7777-7777-777777777777', 'Banana 1kg', 1, true, 'available', '22222222-2222-2222-2222-222222222222', NOW(), NOW()),
 -- DM products
-('p8888888-8888-8888-8888-888888888888', 'Nivea krema 75ml', 2, true, 'available', '33333333-3333-3333-3333-333333333333', NOW(), NOW()),
-('p9999999-9999-9999-9999-999999999999', 'Oral-B cetkica', 3, true, 'available', '33333333-3333-3333-3333-333333333333', NOW(), NOW()),
-('paaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'Pampers pelene 50kom', 5, true, 'available', '33333333-3333-3333-3333-333333333333', NOW(), NOW()),
+('b8888888-8888-8888-8888-888888888888', 'Nivea krema 75ml', 2, true, 'available', '33333333-3333-3333-3333-333333333333', NOW(), NOW()),
+('b9999999-9999-9999-9999-999999999999', 'Oral-B cetkica', 3, true, 'available', '33333333-3333-3333-3333-333333333333', NOW(), NOW()),
+('baaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'Pampers pelene 50kom', 5, true, 'available', '33333333-3333-3333-3333-333333333333', NOW(), NOW()),
 -- Pending products at various stores
-('pbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'Novi proizvod za odobrenje 1', 0, false, 'unavailable', '44444444-4444-4444-4444-444444444444', NOW(), NOW()),
-('pcccccc-cccc-cccc-cccc-cccccccccccc', 'Novi proizvod za odobrenje 2', 0, false, 'unavailable', '55555555-5555-5555-5555-555555555555', NOW(), NOW()),
-('pdddddd-dddd-dddd-dddd-dddddddddddd', 'Novi proizvod za odobrenje 3', 0, false, 'unavailable', '66666666-6666-6666-6666-666666666666', NOW(), NOW());
+('dbbbbbb0-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'Novi proizvod za odobrenje 1', 0, false, 'unavailable', '44444444-4444-4444-4444-444444444444', NOW(), NOW()),
+('dcccccc0-cccc-cccc-cccc-cccccccccccc', 'Novi proizvod za odobrenje 2', 0, false, 'unavailable', '55555555-5555-5555-5555-555555555555', NOW(), NOW()),
+('ddddddd0-dddd-dddd-dddd-dddddddddddd', 'Novi proizvod za odobrenje 3', 0, false, 'unavailable', '66666666-6666-6666-6666-666666666666', NOW(), NOW());
 
 -- =============================================
 -- TRANSACTIONS
 -- =============================================
 INSERT INTO transactions (id, "userId", "shopId", date, points, "receiptId", "createdAt") VALUES
 -- Demo user transactions
-('t1111111-1111-1111-1111-111111111111', '2721d7a2-b4f4-4854-9073-f0a1d403d2aa', '9c13aa92-abd5-4866-ba77-5c003a1196e5', NOW() - INTERVAL '30 days', 15, 'DEMO-REC-001', NOW() - INTERVAL '30 days'),
-('t2222222-2222-2222-2222-222222222222', '2721d7a2-b4f4-4854-9073-f0a1d403d2aa', '11111111-1111-1111-1111-111111111111', NOW() - INTERVAL '25 days', 8, 'DEMO-REC-002', NOW() - INTERVAL '25 days'),
-('t3333333-3333-3333-3333-333333333333', '2721d7a2-b4f4-4854-9073-f0a1d403d2aa', '22222222-2222-2222-2222-222222222222', NOW() - INTERVAL '20 days', 12, 'DEMO-REC-003', NOW() - INTERVAL '20 days'),
-('t4444444-4444-4444-4444-444444444444', '2721d7a2-b4f4-4854-9073-f0a1d403d2aa', '33333333-3333-3333-3333-333333333333', NOW() - INTERVAL '15 days', 10, 'DEMO-REC-004', NOW() - INTERVAL '15 days'),
-('t5555555-5555-5555-5555-555555555555', '2721d7a2-b4f4-4854-9073-f0a1d403d2aa', '226d3c1d-09d5-4016-af44-5f47e6239b24', NOW() - INTERVAL '10 days', 18, 'DEMO-REC-005', NOW() - INTERVAL '10 days'),
-('t6666666-6666-6666-6666-666666666666', '2721d7a2-b4f4-4854-9073-f0a1d403d2aa', '9efbe933-3d02-44e9-846c-42b49c332036', NOW() - INTERVAL '5 days', 6, 'DEMO-REC-006', NOW() - INTERVAL '5 days'),
+('c1111111-1111-1111-1111-111111111111', '2721d7a2-b4f4-4854-9073-f0a1d403d2aa', '9c13aa92-abd5-4866-ba77-5c003a1196e5', NOW() - INTERVAL '30 days', 15, 'DEMO-REC-001', NOW() - INTERVAL '30 days'),
+('c2222222-2222-2222-2222-222222222222', '2721d7a2-b4f4-4854-9073-f0a1d403d2aa', '11111111-1111-1111-1111-111111111111', NOW() - INTERVAL '25 days', 8, 'DEMO-REC-002', NOW() - INTERVAL '25 days'),
+('c3333333-3333-3333-3333-333333333333', '2721d7a2-b4f4-4854-9073-f0a1d403d2aa', '22222222-2222-2222-2222-222222222222', NOW() - INTERVAL '20 days', 12, 'DEMO-REC-003', NOW() - INTERVAL '20 days'),
+('c4444444-4444-4444-4444-444444444444', '2721d7a2-b4f4-4854-9073-f0a1d403d2aa', '33333333-3333-3333-3333-333333333333', NOW() - INTERVAL '15 days', 10, 'DEMO-REC-004', NOW() - INTERVAL '15 days'),
+('c5555555-5555-5555-5555-555555555555', '2721d7a2-b4f4-4854-9073-f0a1d403d2aa', '226d3c1d-09d5-4016-af44-5f47e6239b24', NOW() - INTERVAL '10 days', 18, 'DEMO-REC-005', NOW() - INTERVAL '10 days'),
+('c6666666-6666-6666-6666-666666666666', '2721d7a2-b4f4-4854-9073-f0a1d403d2aa', '9efbe933-3d02-44e9-846c-42b49c332036', NOW() - INTERVAL '5 days', 6, 'DEMO-REC-006', NOW() - INTERVAL '5 days'),
 -- Admin transactions
-('t7777777-7777-7777-7777-777777777777', '0600aa5a-8c5b-4ab3-9557-76c326692c0b', '9c13aa92-abd5-4866-ba77-5c003a1196e5', NOW() - INTERVAL '28 days', 20, 'ADMIN-REC-001', NOW() - INTERVAL '28 days'),
-('t8888888-8888-8888-8888-888888888888', '0600aa5a-8c5b-4ab3-9557-76c326692c0b', '226d3c1d-09d5-4016-af44-5f47e6239b24', NOW() - INTERVAL '14 days', 25, 'ADMIN-REC-002', NOW() - INTERVAL '14 days'),
+('c7777777-7777-7777-7777-777777777777', '0600aa5a-8c5b-4ab3-9557-76c326692c0b', '9c13aa92-abd5-4866-ba77-5c003a1196e5', NOW() - INTERVAL '28 days', 20, 'ADMIN-REC-001', NOW() - INTERVAL '28 days'),
+('c8888888-8888-8888-8888-888888888888', '0600aa5a-8c5b-4ab3-9557-76c326692c0b', '226d3c1d-09d5-4016-af44-5f47e6239b24', NOW() - INTERVAL '14 days', 25, 'ADMIN-REC-002', NOW() - INTERVAL '14 days'),
 -- Other users transactions
-('t9999999-9999-9999-9999-999999999999', 'a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d', '11111111-1111-1111-1111-111111111111', NOW() - INTERVAL '22 days', 14, 'USER1-REC-001', NOW() - INTERVAL '22 days'),
-('taaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'b2c3d4e5-f6a7-5b6c-9d0e-1f2a3b4c5d6e', '22222222-2222-2222-2222-222222222222', NOW() - INTERVAL '18 days', 9, 'USER2-REC-001', NOW() - INTERVAL '18 days'),
-('tbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb', 'c3d4e5f6-a7b8-6c7d-0e1f-2a3b4c5d6e7f', '33333333-3333-3333-3333-333333333333', NOW() - INTERVAL '12 days', 16, 'USER3-REC-001', NOW() - INTERVAL '12 days'),
-('tcccccc-cccc-cccc-cccc-ccccccccccc', 'e5f6a7b8-c9d0-8e9f-2a3b-4c5d6e7f8a9b', '88888888-8888-8888-8888-888888888888', NOW() - INTERVAL '8 days', 22, 'USER4-REC-001', NOW() - INTERVAL '8 days'),
-('tdddddd-dddd-dddd-dddd-ddddddddddd', 'e5f6a7b8-c9d0-8e9f-2a3b-4c5d6e7f8a9b', '77777777-7777-7777-7777-777777777777', NOW() - INTERVAL '3 days', 11, 'USER4-REC-002', NOW() - INTERVAL '3 days');
+('c9999999-9999-9999-9999-999999999999', 'a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d', '11111111-1111-1111-1111-111111111111', NOW() - INTERVAL '22 days', 14, 'USER1-REC-001', NOW() - INTERVAL '22 days'),
+('caaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'b2c3d4e5-f6a7-5b6c-9d0e-1f2a3b4c5d6e', '22222222-2222-2222-2222-222222222222', NOW() - INTERVAL '18 days', 9, 'USER2-REC-001', NOW() - INTERVAL '18 days'),
+('cbbbbbb0-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'c3d4e5f6-a7b8-6c7d-0e1f-2a3b4c5d6e7f', '33333333-3333-3333-3333-333333333333', NOW() - INTERVAL '12 days', 16, 'USER3-REC-001', NOW() - INTERVAL '12 days'),
+('ccccccc0-cccc-cccc-cccc-cccccccccccc', 'e5f6a7b8-c9d0-8e9f-2a3b-4c5d6e7f8a9b', '88888888-8888-8888-8888-888888888888', NOW() - INTERVAL '8 days', 22, 'USER4-REC-001', NOW() - INTERVAL '8 days'),
+('cddddddd-dddd-dddd-dddd-dddddddddddd', 'e5f6a7b8-c9d0-8e9f-2a3b-4c5d6e7f8a9b', '77777777-7777-7777-7777-777777777777', NOW() - INTERVAL '3 days', 11, 'USER4-REC-002', NOW() - INTERVAL '3 days');
 
 -- =============================================
 -- TRANSACTION PRODUCTS
 -- =============================================
 INSERT INTO transaction_products ("transactionId", "productId", quantity, "pointsAwarded", "pointsValue", "createdAt") VALUES
 -- Demo user transaction products
-('t1111111-1111-1111-1111-111111111111', 'e6dd27ae-30f0-40f3-bd34-ed45580be520', 3, true, 3, NOW()),
-('t1111111-1111-1111-1111-111111111111', '9a653607-4ed4-47b7-b999-41c8e1235abb', 2, true, 4, NOW()),
-('t1111111-1111-1111-1111-111111111111', 'b992ee45-63a7-4bad-936f-5189ac81ea0e', 2, true, 6, NOW()),
-('t1111111-1111-1111-1111-111111111111', '71b44696-65c6-4f4b-a9dd-39e04cff6502', 2, true, 2, NOW()),
-('t2222222-2222-2222-2222-222222222222', 'p1111111-1111-1111-1111-111111111111', 2, true, 2, NOW()),
-('t2222222-2222-2222-2222-222222222222', 'p2222222-2222-2222-2222-222222222222', 2, true, 4, NOW()),
-('t2222222-2222-2222-2222-222222222222', 'p4444444-4444-4444-4444-444444444444', 1, true, 2, NOW()),
-('t3333333-3333-3333-3333-333333333333', 'p5555555-5555-5555-5555-555555555555', 2, true, 6, NOW()),
-('t3333333-3333-3333-3333-333333333333', 'p6666666-6666-6666-6666-666666666666', 4, true, 4, NOW()),
-('t3333333-3333-3333-3333-333333333333', 'p7777777-7777-7777-7777-777777777777', 2, true, 2, NOW()),
-('t4444444-4444-4444-4444-444444444444', 'p8888888-8888-8888-8888-888888888888', 2, true, 4, NOW()),
-('t4444444-4444-4444-4444-444444444444', 'p9999999-9999-9999-9999-999999999999', 2, true, 6, NOW()),
-('t5555555-5555-5555-5555-555555555555', '004555ab-1a8c-4fdd-9270-509faec8ca40', 2, true, 8, NOW()),
-('t5555555-5555-5555-5555-555555555555', '40acc343-9446-4a3d-a857-baadd6cd5b97', 3, true, 6, NOW()),
-('t5555555-5555-5555-5555-555555555555', 'b571561e-d7c5-4522-a18a-c5064363a26f', 2, true, 4, NOW()),
-('t6666666-6666-6666-6666-666666666666', 'f5747e19-97b5-46ac-bd41-4c1df5bb4cfa', 2, true, 4, NOW()),
-('t6666666-6666-6666-6666-666666666666', '1e543bce-ce7d-4a8d-b039-4720da673e81', 2, true, 2, NOW()),
+('c1111111-1111-1111-1111-111111111111', 'e6dd27ae-30f0-40f3-bd34-ed45580be520', 3, true, 3, NOW()),
+('c1111111-1111-1111-1111-111111111111', '9a653607-4ed4-47b7-b999-41c8e1235abb', 2, true, 4, NOW()),
+('c1111111-1111-1111-1111-111111111111', 'b992ee45-63a7-4bad-936f-5189ac81ea0e', 2, true, 6, NOW()),
+('c1111111-1111-1111-1111-111111111111', '71b44696-65c6-4f4b-a9dd-39e04cff6502', 2, true, 2, NOW()),
+('c2222222-2222-2222-2222-222222222222', 'b1111111-1111-1111-1111-111111111111', 2, true, 2, NOW()),
+('c2222222-2222-2222-2222-222222222222', 'b2222222-2222-2222-2222-222222222222', 2, true, 4, NOW()),
+('c2222222-2222-2222-2222-222222222222', 'b4444444-4444-4444-4444-444444444444', 1, true, 2, NOW()),
+('c3333333-3333-3333-3333-333333333333', 'b5555555-5555-5555-5555-555555555555', 2, true, 6, NOW()),
+('c3333333-3333-3333-3333-333333333333', 'b6666666-6666-6666-6666-666666666666', 4, true, 4, NOW()),
+('c3333333-3333-3333-3333-333333333333', 'b7777777-7777-7777-7777-777777777777', 2, true, 2, NOW()),
+('c4444444-4444-4444-4444-444444444444', 'b8888888-8888-8888-8888-888888888888', 2, true, 4, NOW()),
+('c4444444-4444-4444-4444-444444444444', 'b9999999-9999-9999-9999-999999999999', 2, true, 6, NOW()),
+('c5555555-5555-5555-5555-555555555555', '004555ab-1a8c-4fdd-9270-509faec8ca40', 2, true, 8, NOW()),
+('c5555555-5555-5555-5555-555555555555', '40acc343-9446-4a3d-a857-baadd6cd5b97', 3, true, 6, NOW()),
+('c5555555-5555-5555-5555-555555555555', 'b571561e-d7c5-4522-a18a-c5064363a26f', 2, true, 4, NOW()),
+('c6666666-6666-6666-6666-666666666666', 'f5747e19-97b5-46ac-bd41-4c1df5bb4cfa', 2, true, 4, NOW()),
+('c6666666-6666-6666-6666-666666666666', '1e543bce-ce7d-4a8d-b039-4720da673e81', 2, true, 2, NOW()),
 -- Admin transaction products
-('t7777777-7777-7777-7777-777777777777', 'e6dd27ae-30f0-40f3-bd34-ed45580be520', 5, true, 5, NOW()),
-('t7777777-7777-7777-7777-777777777777', 'cd35d557-9d9d-4e1f-90ff-819eb4ca26b3', 5, true, 10, NOW()),
-('t7777777-7777-7777-7777-777777777777', 'adc5eb84-962f-4ee7-a9db-a8a55961755d', 5, true, 5, NOW()),
-('t8888888-8888-8888-8888-888888888888', '004555ab-1a8c-4fdd-9270-509faec8ca40', 3, true, 12, NOW()),
-('t8888888-8888-8888-8888-888888888888', 'b571561e-d7c5-4522-a18a-c5064363a26f', 5, true, 10, NOW());
+('c7777777-7777-7777-7777-777777777777', 'e6dd27ae-30f0-40f3-bd34-ed45580be520', 5, true, 5, NOW()),
+('c7777777-7777-7777-7777-777777777777', 'cd35d557-9d9d-4e1f-90ff-819eb4ca26b3', 5, true, 10, NOW()),
+('c7777777-7777-7777-7777-777777777777', 'adc5eb84-962f-4ee7-a9db-a8a55961755d', 5, true, 5, NOW()),
+('c8888888-8888-8888-8888-888888888888', '004555ab-1a8c-4fdd-9270-509faec8ca40', 3, true, 12, NOW()),
+('c8888888-8888-8888-8888-888888888888', 'b571561e-d7c5-4522-a18a-c5064363a26f', 5, true, 10, NOW());
 
 -- =============================================
 -- REDEMPTIONS
 -- =============================================
 INSERT INTO redemptions (id, "userId", "rewardId", "pointsSpent", status, "createdAt") VALUES
 -- Demo user redemptions
-('r1111111-1111-1111-1111-111111111111', '2721d7a2-b4f4-4854-9073-f0a1d403d2aa', '9282b6f1-3f31-4908-81d0-423fff5e63ec', 2, 'completed', NOW() - INTERVAL '20 days'),
-('r2222222-2222-2222-2222-222222222222', '2721d7a2-b4f4-4854-9073-f0a1d403d2aa', '2fba7fd5-f3e1-4865-b70b-c05c7680f4af', 5, 'completed', NOW() - INTERVAL '15 days'),
-('r3333333-3333-3333-3333-333333333333', '2721d7a2-b4f4-4854-9073-f0a1d403d2aa', 'aaaa1111-1111-1111-1111-111111111111', 8, 'pending', NOW() - INTERVAL '5 days'),
+('e1111111-1111-1111-1111-111111111111', '2721d7a2-b4f4-4854-9073-f0a1d403d2aa', '9282b6f1-3f31-4908-81d0-423fff5e63ec', 2, 'completed', NOW() - INTERVAL '20 days'),
+('e2222222-2222-2222-2222-222222222222', '2721d7a2-b4f4-4854-9073-f0a1d403d2aa', '2fba7fd5-f3e1-4865-b70b-c05c7680f4af', 5, 'completed', NOW() - INTERVAL '15 days'),
+('e3333333-3333-3333-3333-333333333333', '2721d7a2-b4f4-4854-9073-f0a1d403d2aa', 'aaaa1111-1111-1111-1111-111111111111', 8, 'pending', NOW() - INTERVAL '5 days'),
 -- Admin redemptions
-('r4444444-4444-4444-4444-444444444444', '0600aa5a-8c5b-4ab3-9557-76c326692c0b', '9282b6f1-3f31-4908-81d0-423fff5e63ec', 2, 'completed', NOW() - INTERVAL '25 days'),
-('r5555555-5555-5555-5555-555555555555', '0600aa5a-8c5b-4ab3-9557-76c326692c0b', 'bbbb2222-2222-2222-2222-222222222222', 12, 'completed', NOW() - INTERVAL '10 days'),
+('e4444444-4444-4444-4444-444444444444', '0600aa5a-8c5b-4ab3-9557-76c326692c0b', '9282b6f1-3f31-4908-81d0-423fff5e63ec', 2, 'completed', NOW() - INTERVAL '25 days'),
+('e5555555-5555-5555-5555-555555555555', '0600aa5a-8c5b-4ab3-9557-76c326692c0b', 'bbbb2222-2222-2222-2222-222222222222', 12, 'completed', NOW() - INTERVAL '10 days'),
 -- Other user redemptions
-('r6666666-6666-6666-6666-666666666666', 'a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d', '2fba7fd5-f3e1-4865-b70b-c05c7680f4af', 5, 'completed', NOW() - INTERVAL '18 days'),
-('r7777777-7777-7777-7777-777777777777', 'e5f6a7b8-c9d0-8e9f-2a3b-4c5d6e7f8a9b', 'cccc3333-3333-3333-3333-333333333333', 25, 'pending', NOW() - INTERVAL '2 days'),
-('r8888888-8888-8888-8888-888888888888', 'b2c3d4e5-f6a7-5b6c-9d0e-1f2a3b4c5d6e', 'dddd4444-4444-4444-4444-444444444444', 35, 'cancelled', NOW() - INTERVAL '12 days');
+('e6666666-6666-6666-6666-666666666666', 'a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d', '2fba7fd5-f3e1-4865-b70b-c05c7680f4af', 5, 'completed', NOW() - INTERVAL '18 days'),
+('e7777777-7777-7777-7777-777777777777', 'e5f6a7b8-c9d0-8e9f-2a3b-4c5d6e7f8a9b', 'cccc3333-3333-3333-3333-333333333333', 25, 'pending', NOW() - INTERVAL '2 days'),
+('e8888888-8888-8888-8888-888888888888', 'b2c3d4e5-f6a7-5b6c-9d0e-1f2a3b4c5d6e', 'dddd4444-4444-4444-4444-444444444444', 35, 'cancelled', NOW() - INTERVAL '12 days');
 
 -- =============================================
 -- USER FAVORITE SHOPS
@@ -216,13 +216,13 @@ INSERT INTO family_members ("userId", "familyMemberId") VALUES
 -- =============================================
 INSERT INTO product_approval_requests (id, "userId", "productId", "isRewarded", "createdAt") VALUES
 -- Pending approval requests
-('par11111-1111-1111-1111-111111111111', '2721d7a2-b4f4-4854-9073-f0a1d403d2aa', '4bfe2e84-4b39-40c7-bd87-29184bff0c66', false, NOW() - INTERVAL '5 days'),
-('par22222-2222-2222-2222-222222222222', 'a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d', '88326725-4125-4d08-96c2-4bbdb9938999', false, NOW() - INTERVAL '3 days'),
-('par33333-3333-3333-3333-333333333333', 'b2c3d4e5-f6a7-5b6c-9d0e-1f2a3b4c5d6e', 'pbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', false, NOW() - INTERVAL '2 days'),
-('par44444-4444-4444-4444-444444444444', 'c3d4e5f6-a7b8-6c7d-0e1f-2a3b4c5d6e7f', 'pcccccc-cccc-cccc-cccc-cccccccccccc', false, NOW() - INTERVAL '1 day'),
+('da011111-1111-1111-1111-111111111111', '2721d7a2-b4f4-4854-9073-f0a1d403d2aa', '4bfe2e84-4b39-40c7-bd87-29184bff0c66', false, NOW() - INTERVAL '5 days'),
+('da022222-2222-2222-2222-222222222222', 'a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d', '88326725-4125-4d08-96c2-4bbdb9938999', false, NOW() - INTERVAL '3 days'),
+('da033333-3333-3333-3333-333333333333', 'b2c3d4e5-f6a7-5b6c-9d0e-1f2a3b4c5d6e', 'dbbbbbb0-bbbb-bbbb-bbbb-bbbbbbbbbbbb', false, NOW() - INTERVAL '2 days'),
+('da044444-4444-4444-4444-444444444444', 'c3d4e5f6-a7b8-6c7d-0e1f-2a3b4c5d6e7f', 'dcccccc0-cccc-cccc-cccc-cccccccccccc', false, NOW() - INTERVAL '1 day'),
 -- Rewarded approval requests (for approved products)
-('par55555-5555-5555-5555-555555555555', '2721d7a2-b4f4-4854-9073-f0a1d403d2aa', 'e6dd27ae-30f0-40f3-bd34-ed45580be520', true, NOW() - INTERVAL '30 days'),
-('par66666-6666-6666-6666-666666666666', '0600aa5a-8c5b-4ab3-9557-76c326692c0b', '9a653607-4ed4-47b7-b999-41c8e1235abb', true, NOW() - INTERVAL '28 days');
+('da055555-5555-5555-5555-555555555555', '2721d7a2-b4f4-4854-9073-f0a1d403d2aa', 'e6dd27ae-30f0-40f3-bd34-ed45580be520', true, NOW() - INTERVAL '30 days'),
+('da066666-6666-6666-6666-666666666666', '0600aa5a-8c5b-4ab3-9557-76c326692c0b', '9a653607-4ed4-47b7-b999-41c8e1235abb', true, NOW() - INTERVAL '28 days');
 
 -- Done!
 SELECT 'Seed completed successfully!' as status;
